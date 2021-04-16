@@ -243,7 +243,7 @@ void rockchip_set_bootdev(struct blk_desc *desc)
  * some special boards.
  */
 #define KEY_DOWN_MIN_VAL	0
-#define KEY_DOWN_MAX_VAL	30
+#define KEY_DOWN_MAX_VAL	200
 
 __weak int rockchip_dnl_key_pressed(void)
 {
