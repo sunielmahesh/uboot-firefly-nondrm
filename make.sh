@@ -711,6 +711,17 @@ function pack_loader_image()
 	fi
 
 	rm *_loader_*.bin -rf
+
+	local temp=`grep FlashData= ${RKBIN}/RKBOOT/${RKCHIP_LOADER}MINIALL.ini | cut -f 2 -d "="`
+	local flashData=${temp/tools\/rk_tools\//}
+	temp=`grep FlashBoot= ${RKBIN}/RKBOOT/${RKCHIP_LOADER}MINIALL.ini | cut -f 2 -d "="`
+	local flashBoot=${temp/tools\/rk_tools\//}
+	typeset -l localChip
+	localChip=$RKCHIP
+
+	${RKTOOLS}/mkimage -n ${localChip} -T rksd -d ${RKBIN}/${flashData} idbloader.img
+	cat ${RKBIN}/${flashBoot} >> idbloader.img
+
 	numline=`cat ${ini} | wc -l`
 	if [ ${numline} -eq 1 ]; then
 		image=`sed -n "/PATH=/p" ${ini} | tr -d '\r' | cut -d '=' -f 2`
@@ -723,6 +734,7 @@ function pack_loader_image()
 
 	file=`ls *loader*.bin`
 	echo "pack ${file} okay! Input: ${ini}"
+
 }
 
 function pack_arm32_trust_image()
