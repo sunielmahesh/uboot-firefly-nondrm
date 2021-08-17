@@ -188,6 +188,9 @@ int setup_boot_mode(void)
 		printf("enter charging!\n");
 		env_set("preboot", "setenv preboot; charge");
 		break;
+	case BOOT_MODE_RECOVERY:
+        env_update("bootargs", "recovery");
+        break;
 	}
 
 	return 0;
