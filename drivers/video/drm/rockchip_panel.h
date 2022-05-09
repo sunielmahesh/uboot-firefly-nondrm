@@ -7,6 +7,50 @@
 #ifndef _ROCKCHIP_PANEL_H_
 #define _ROCKCHIP_PANEL_H_
 
+
+struct rockchip_cmd_header {
+	u8 data_type;
+	u8 delay_ms;
+	u8 payload_length;
+} __packed;
+
+struct rockchip_cmd_desc {
+	struct rockchip_cmd_header header;
+	const u8 *payload;
+};
+
+struct rockchip_panel_cmds {
+	struct rockchip_cmd_desc *cmds;
+	int cmd_cnt;
+};
+
+struct dsi_panel_id {
+	u8 *buf;
+	int len;
+};
+
+struct rockchip_panel_plat {
+	bool power_invert;
+	u32 bus_format;
+	unsigned int bpc;
+	unsigned int num;
+	unsigned int id_reg;
+
+	struct dsi_panel_id *id;
+
+	struct {
+		unsigned int prepare;
+		unsigned int unprepare;
+		unsigned int enable;
+		unsigned int disable;
+		unsigned int reset;
+		unsigned int init;
+	} delay;
+
+	struct rockchip_panel_cmds *on_cmds;
+	struct rockchip_panel_cmds *off_cmds;
+};
+
 struct display_state;
 struct rockchip_panel;
 
@@ -16,6 +60,7 @@ struct rockchip_panel_funcs {
 	void (*unprepare)(struct rockchip_panel *panel);
 	void (*enable)(struct rockchip_panel *panel);
 	void (*disable)(struct rockchip_panel *panel);
+	void (*getId)(struct rockchip_panel *panel);
 };
 
 struct rockchip_panel {
@@ -71,6 +116,15 @@ static inline void rockchip_panel_disable(struct rockchip_panel *panel)
 
 	if (panel->funcs && panel->funcs->disable)
 		panel->funcs->disable(panel);
+}
+
+static inline void rockchip_panel_getId(struct rockchip_panel *panel)
+{
+	if (!panel)
+		return;
+
+	if (panel->funcs && panel->funcs->getId)
+		panel->funcs->getId(panel);
 }
 
 #endif	/* _ROCKCHIP_PANEL_H_ */

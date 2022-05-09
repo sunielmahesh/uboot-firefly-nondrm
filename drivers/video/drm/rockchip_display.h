@@ -97,6 +97,7 @@ struct panel_state {
 	struct rockchip_panel *panel;
 
 	ofnode dsp_lut_node;
+//	int num;
 };
 
 struct overscan {

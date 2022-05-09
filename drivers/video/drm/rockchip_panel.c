@@ -25,40 +25,6 @@
 #include "rockchip_connector.h"
 #include "rockchip_panel.h"
 
-struct rockchip_cmd_header {
-	u8 data_type;
-	u8 delay_ms;
-	u8 payload_length;
-} __packed;
-
-struct rockchip_cmd_desc {
-	struct rockchip_cmd_header header;
-	const u8 *payload;
-};
-
-struct rockchip_panel_cmds {
-	struct rockchip_cmd_desc *cmds;
-	int cmd_cnt;
-};
-
-struct rockchip_panel_plat {
-	bool power_invert;
-	u32 bus_format;
-	unsigned int bpc;
-
-	struct {
-		unsigned int prepare;
-		unsigned int unprepare;
-		unsigned int enable;
-		unsigned int disable;
-		unsigned int reset;
-		unsigned int init;
-	} delay;
-
-	struct rockchip_panel_cmds *on_cmds;
-	struct rockchip_panel_cmds *off_cmds;
-};
-
 struct rockchip_panel_priv {
 	bool prepared;
 	bool enabled;
@@ -373,6 +339,69 @@ static void panel_simple_disable(struct rockchip_panel *panel)
 	priv->enabled = false;
 }
 
+static void panel_simple_getId(struct rockchip_panel *panel)
+{
+	struct rockchip_panel_plat *plat = dev_get_platdata(panel->dev);
+	struct rockchip_panel_priv *priv = dev_get_priv(panel->dev);
+	struct mipi_dsi_device *dsi = dev_get_parent_platdata(panel->dev);
+	u8 id_buf[3] = {0xff, 0xff, 0xff};
+	char mipi_dsi_id[10];
+	int ret = -1, cnt = 5;
+
+	if (priv->power_supply)
+		regulator_set_enable(priv->power_supply, !plat->power_invert);
+
+	if (dm_gpio_is_valid(&priv->enable_gpio))
+		dm_gpio_set_value(&priv->enable_gpio, 1);
+
+	if (plat->delay.prepare)
+		mdelay(plat->delay.prepare);
+
+	if (dm_gpio_is_valid(&priv->reset_gpio))
+		dm_gpio_set_value(&priv->reset_gpio, 1);
+
+	if (plat->delay.reset)
+		mdelay(plat->delay.reset);
+
+	if (dm_gpio_is_valid(&priv->reset_gpio))
+		dm_gpio_set_value(&priv->reset_gpio, 0);
+
+	if (plat->delay.init)
+		mdelay(plat->delay.init);
+
+	while ((ret < 0) && (cnt > 0)) {
+		ret = mipi_dsi_set_maximum_return_packet_size(dsi, 3);
+		if (ret) {
+			printf("failed to set maximum return packet size: %d\n", ret);
+		}
+		ret = mipi_dsi_dcs_read(dsi, 0x04, id_buf, ARRAY_SIZE(id_buf));
+		if (ret < 0 || ret < ARRAY_SIZE(id_buf)) {
+			printf("failed to read dcs id: %d\n", ret);
+			cnt--;
+		}
+	}
+
+	printf("MIPI DSI ID: 0x%x, 0x%x, 0x%x\n", id_buf[0], id_buf[1], id_buf[2]);
+	snprintf(mipi_dsi_id, ARRAY_SIZE(mipi_dsi_id), "0x%x%x%x", id_buf[0], id_buf[1], id_buf[2]);
+	if (!strcmp(mipi_dsi_id, "0xfffff")) {
+		printf("mipi dsi id error\n");
+		return;
+	}
+	env_set("mipi_dsi_id", mipi_dsi_id);
+
+	if (dm_gpio_is_valid(&priv->reset_gpio))
+		dm_gpio_set_value(&priv->reset_gpio, 1);
+
+	if (dm_gpio_is_valid(&priv->enable_gpio))
+		dm_gpio_set_value(&priv->enable_gpio, 0);
+
+	if (priv->power_supply)
+		regulator_set_enable(priv->power_supply, plat->power_invert);
+
+	if (plat->delay.unprepare)
+		mdelay(plat->delay.unprepare);
+}
+
 static void panel_simple_init(struct rockchip_panel *panel)
 {
 	struct display_state *state = panel->state;
@@ -387,6 +416,7 @@ static const struct rockchip_panel_funcs rockchip_panel_funcs = {
 	.unprepare = panel_simple_unprepare,
 	.enable = panel_simple_enable,
 	.disable = panel_simple_disable,
+	.getId = panel_simple_getId,
 };
 
 static int rockchip_panel_ofdata_to_platdata(struct udevice *dev)
@@ -408,6 +438,20 @@ static int rockchip_panel_ofdata_to_platdata(struct udevice *dev)
 	plat->bus_format = dev_read_u32_default(dev, "bus-format",
 						MEDIA_BUS_FMT_RBG888_1X24);
 	plat->bpc = dev_read_u32_default(dev, "bpc", 8);
+
+//	plat->num = dev_read_u32_default(dev, "num", 0);
+	plat->id_reg = dev_read_u32_default(dev, "id-reg", 0);
+
+	data = dev_read_prop(dev, "id", &len);
+	if (data) {
+		plat->id = calloc(1, sizeof(*plat->id));
+		if (!plat->id)
+			return -ENOMEM;
+
+		plat->id->buf = calloc(1, sizeof(char) * len);
+		memcpy(plat->id->buf, data, len);
+		plat->id->len = len;
+	}
 
 	data = dev_read_prop(dev, "panel-init-sequence", &len);
 	if (data) {
@@ -529,6 +573,26 @@ static int rockchip_panel_probe(struct udevice *dev)
 	return 0;
 }
 
+static int rockchip_panel_deregister(struct udevice *dev)
+{
+	struct rockchip_panel_priv *priv = dev_get_priv(dev);
+//	struct rockchip_panel_plat *plat = dev_get_platdata(dev);
+	struct rockchip_panel *panel = (struct rockchip_panel *)dev->driver_data;
+//	int ret;
+//	const char *cmd_type;
+
+	printf("rockchip_panel_deregister\n");
+
+	free(panel);
+	priv->cmd_type = CMD_TYPE_DEFAULT;
+	priv->power_supply = NULL;
+	priv->backlight = NULL;
+	dm_gpio_free(dev, &priv->reset_gpio);
+	dm_gpio_free(dev, &priv->enable_gpio);
+
+	return 0;
+}
+
 static const struct udevice_id rockchip_panel_ids[] = {
 	{ .compatible = "simple-panel", },
 	{ .compatible = "simple-panel-dsi", },
@@ -541,6 +605,7 @@ U_BOOT_DRIVER(rockchip_panel) = {
 	.of_match = rockchip_panel_ids,
 	.ofdata_to_platdata = rockchip_panel_ofdata_to_platdata,
 	.probe = rockchip_panel_probe,
+	.remove = rockchip_panel_deregister,
 	.priv_auto_alloc_size = sizeof(struct rockchip_panel_priv),
 	.platdata_auto_alloc_size = sizeof(struct rockchip_panel_plat),
 };
