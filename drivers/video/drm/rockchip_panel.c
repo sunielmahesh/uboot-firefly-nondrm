@@ -374,7 +374,7 @@ static void panel_simple_getId(struct rockchip_panel *panel)
 		if (ret) {
 			printf("failed to set maximum return packet size: %d\n", ret);
 		}
-		ret = mipi_dsi_dcs_read(dsi, 0x04, id_buf, ARRAY_SIZE(id_buf));
+		ret = mipi_dsi_dcs_read(dsi, plat->id_reg, id_buf, ARRAY_SIZE(id_buf));
 		if (ret < 0 || ret < ARRAY_SIZE(id_buf)) {
 			printf("failed to read dcs id: %d\n", ret);
 			cnt--;
