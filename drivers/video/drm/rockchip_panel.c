@@ -383,7 +383,7 @@ static void panel_simple_getId(struct rockchip_panel *panel)
 
 	printf("MIPI DSI ID: 0x%x, 0x%x, 0x%x\n", id_buf[0], id_buf[1], id_buf[2]);
 	snprintf(mipi_dsi_id, ARRAY_SIZE(mipi_dsi_id), "0x%x%x%x", id_buf[0], id_buf[1], id_buf[2]);
-	if (!strcmp(mipi_dsi_id, "0xfffff")) {
+	if (!strcmp(mipi_dsi_id, "0xffffff")) {
 		printf("mipi dsi id error\n");
 		return;
 	}

@@ -248,7 +248,5 @@ int mipi_dsi_dcs_set_display_brightness(struct mipi_dsi_device *dsi,
 					u16 brightness);
 int mipi_dsi_dcs_get_display_brightness(struct mipi_dsi_device *dsi,
 					u16 *brightness);
-int mipi_dsi_dcs_get_display_id(struct mipi_dsi_device *dsi,
-					u32 *id);
 
 #endif /* __DRM_MIPI_DSI__ */

@@ -1573,8 +1573,8 @@ static struct rockchip_panel *rockchip_of_find_panel(struct display_state *state
 		dev = state->conn_state.dev;
 
 	panel_node = dev_read_subnode(dev, "panel");
-redo:
 	if (ofnode_valid(panel_node) && ofnode_is_available(panel_node)) {
+redo:
 		ret = uclass_get_device_by_ofnode(UCLASS_PANEL, panel_node,
 						  &panel_dev);
 		if (!ret) {
@@ -1588,6 +1588,9 @@ redo:
 				rockchip_panel_getId(panel);
 				simple_display_disable(state);
 				mipi_dsi_id = env_get("mipi_dsi_id");
+				if (!mipi_dsi_id) {
+					goto failed;
+				}
 			}
 			snprintf(plat_dsi_id, ARRAY_SIZE(plat_dsi_id), "0x%x%x%x",
 				panel_plat->id->buf[0], panel_plat->id->buf[1], panel_plat->id->buf[2]);
@@ -1595,12 +1598,17 @@ redo:
 				goto found;
 			} else {
 				panel_node = dev_read_next_subnode(panel_node);
-				device_remove(panel_dev, DM_REMOVE_NORMAL);
-				goto redo;
+				if (ofnode_valid(panel_node) && ofnode_is_available(panel_node)) {
+					device_remove(panel_dev, DM_REMOVE_NORMAL);
+					goto redo;
+				} else {
+					goto failed;
+				}
 			}
 		}
 	}
 
+failed:
 	ports = dev_read_subnode(dev, "ports");
 	if (!ofnode_valid(ports))
 		return NULL;
