@@ -24,7 +24,7 @@ struct rockchip_panel_cmds {
 	int cmd_cnt;
 };
 
-struct dsi_panel_id {
+struct rockchip_panel_id {
 	u8 *buf;
 	int len;
 };
@@ -36,7 +36,8 @@ struct rockchip_panel_plat {
 	unsigned int num;
 	unsigned int id_reg;
 
-	struct dsi_panel_id *id;
+	struct rockchip_panel_id *id;
+	char *target_id;
 
 	struct {
 		unsigned int prepare;

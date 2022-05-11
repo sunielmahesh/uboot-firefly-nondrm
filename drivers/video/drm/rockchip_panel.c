@@ -344,8 +344,8 @@ static void panel_simple_getId(struct rockchip_panel *panel)
 	struct rockchip_panel_plat *plat = dev_get_platdata(panel->dev);
 	struct rockchip_panel_priv *priv = dev_get_priv(panel->dev);
 	struct mipi_dsi_device *dsi = dev_get_parent_platdata(panel->dev);
-	u8 id_buf[3] = {0xff, 0xff, 0xff};
-	char mipi_dsi_id[10];
+	u8 buf[3] = {0xff, 0xff, 0xff};
+	char panel_id[10];
 	int ret = -1, cnt = 5;
 
 	if (priv->power_supply)
@@ -374,20 +374,21 @@ static void panel_simple_getId(struct rockchip_panel *panel)
 		if (ret) {
 			printf("failed to set maximum return packet size: %d\n", ret);
 		}
-		ret = mipi_dsi_dcs_read(dsi, plat->id_reg, id_buf, ARRAY_SIZE(id_buf));
-		if (ret < 0 || ret < ARRAY_SIZE(id_buf)) {
+		ret = mipi_dsi_dcs_read(dsi, plat->id_reg, buf, ARRAY_SIZE(buf));
+		if (ret < 0 || ret < ARRAY_SIZE(buf)) {
 			printf("failed to read dcs id: %d\n", ret);
 			cnt--;
 		}
 	}
 
-	printf("MIPI DSI ID: 0x%x, 0x%x, 0x%x\n", id_buf[0], id_buf[1], id_buf[2]);
-	snprintf(mipi_dsi_id, ARRAY_SIZE(mipi_dsi_id), "0x%x%x%x", id_buf[0], id_buf[1], id_buf[2]);
-	if (!strcmp(mipi_dsi_id, "0xffffff")) {
-		printf("mipi dsi id error\n");
+	printf("Panel id: 0x%x, 0x%x, 0x%x\n", buf[0], buf[1], buf[2]);
+	snprintf(panel_id, ARRAY_SIZE(panel_id), "0x%x%x%x", buf[0], buf[1], buf[2]);
+	if (!strcmp(panel_id, "0xffffff")) {
+		printf("panel id error\n");
 		return;
 	}
-	env_set("mipi_dsi_id", mipi_dsi_id);
+
+	plat->target_id = strdup(panel_id);
 
 	if (dm_gpio_is_valid(&priv->reset_gpio))
 		dm_gpio_set_value(&priv->reset_gpio, 1);

@@ -1563,8 +1563,8 @@ static struct rockchip_panel *rockchip_of_find_panel(struct display_state *state
 	struct udevice *dev;
 	struct rockchip_panel *panel;
 	struct rockchip_panel_plat *panel_plat;
-	char *mipi_dsi_id;
-	char plat_dsi_id[10];
+	char env_str[50];
+	char *target_id;
 	int done = false;
 
 	if (is_bridge)
@@ -1587,14 +1587,21 @@ redo:
 				simple_display_enable(state);
 				rockchip_panel_getId(panel);
 				simple_display_disable(state);
-				mipi_dsi_id = env_get("mipi_dsi_id");
-				if (!mipi_dsi_id) {
+				if (!panel_plat->target_id) {
 					goto failed;
+				} else {
+					target_id = strdup(panel_plat->target_id);
 				}
 			}
-			snprintf(plat_dsi_id, ARRAY_SIZE(plat_dsi_id), "0x%x%x%x",
+
+			for (int i = 0; i < 3; i++) {
+				printf("DTB Panel id [%d] = 0x%x\n", i, panel_plat->id->buf[i]);
+			}
+			snprintf(env_str, ARRAY_SIZE(env_str), "0x%x%x%x",
 				panel_plat->id->buf[0], panel_plat->id->buf[1], panel_plat->id->buf[2]);
-			if (!strcmp(mipi_dsi_id, plat_dsi_id)) {
+			if (!strcmp(target_id, env_str)) {
+				snprintf(env_str, ARRAY_SIZE(env_str), "dsi.panel_id=%s", target_id);
+				env_update("bootargs", env_str);
 				goto found;
 			} else {
 				panel_node = dev_read_next_subnode(panel_node);
