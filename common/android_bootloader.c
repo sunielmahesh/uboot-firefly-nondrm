@@ -27,6 +27,7 @@
 #include <bidram.h>
 #include <console.h>
 #include <sysmem.h>
+#include <adc.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -1082,6 +1083,46 @@ int android_image_load_by_partname(struct blk_desc *dev_desc,
 	return 0;
 }
 
+#if defined(CONFIG_ROCKCHIP_RK3399) && defined(CONFIG_USING_KERNEL_DTB)
+static bool fdt_property_exist(char *path, char *property)
+{
+	char string[1024] = {0};
+
+	sprintf(string,"fdt get value store_value %s %s", path, property);
+	if (!run_command(string, 0)) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+static void compatible_with_rk3399_bootup(void)
+{
+	/* compatible for ROC-RK3399-PC-PLUS and ROC-RK3399-PC-Pro */
+	if (fdt_property_exist("/", "model")) {
+		char *store_value = env_get("store_value");
+		//printf("model = %s\n", store_value);
+		if (strstr(store_value, "ROC-RK3399-PC-PLUS and ROC-RK3399-PC-Pro") != NULL) {
+			u32 adc_val;
+			int ret = 0;
+			ret = adc_channel_single_shot("saradc", 4, &adc_val);
+			if (ret)
+				return;
+			printf("saradc4 value = %d\n", adc_val);
+			if ((adc_val < 50)) {
+				run_command("fdt rm /rockchip-key/power-key", 0);
+				run_command("fdt set /i2c@ff3c0000/hym8563_pro status disabled", 0);
+				run_command("fdt set /i2c@ff3c0000/hym8563_plus status okay", 0);
+			} else {
+				run_command("fdt set /rockchip-key/power-key status okay", 0);
+				run_command("fdt set /i2c@ff3c0000/hym8563_pro status okay", 0);
+				run_command("fdt set /i2c@ff3c0000/hym8563_plus status disabled", 0);
+			}
+		}
+	}
+}
+#endif
+
 int android_bootloader_boot_flow(struct blk_desc *dev_desc,
 				 unsigned long load_address)
 {
@@ -1092,6 +1133,10 @@ int android_bootloader_boot_flow(struct blk_desc *dev_desc,
 	char slot_suffix[3] = {0};
 	const char *mode_cmdline = NULL;
 	char *boot_partname = ANDROID_PARTITION_BOOT;
+
+#if defined(CONFIG_ROCKCHIP_RK3399) && defined(CONFIG_USING_KERNEL_DTB)
+	compatible_with_rk3399_bootup();
+#endif
 
 	/*
 	 * 1. Load MISC partition and determine the boot mode
