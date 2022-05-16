@@ -1110,13 +1110,21 @@ static void compatible_with_rk3399_bootup(void)
 				return;
 			printf("saradc4 value = %d\n", adc_val);
 			if ((adc_val < 50)) {
+				/* ROC-RK3399-PC-PLUS */
 				run_command("fdt rm /rockchip-key/power-key", 0);
 				run_command("fdt set /i2c@ff3c0000/hym8563_pro status disabled", 0);
 				run_command("fdt set /i2c@ff3c0000/hym8563_plus status okay", 0);
+
+				run_command("fdt set /wireless-wlan status disabled", 0);
+				run_command("fdt set /wireless-bluetooth status disabled", 0);
 			} else {
+				/* ROC-RK3399-PC-PRO */
 				run_command("fdt set /rockchip-key/power-key status okay", 0);
 				run_command("fdt set /i2c@ff3c0000/hym8563_pro status okay", 0);
 				run_command("fdt set /i2c@ff3c0000/hym8563_plus status disabled", 0);
+
+				run_command("fdt set /wireless-wlan status okay", 0);
+				run_command("fdt set /wireless-bluetooth status okay", 0);
 			}
 		}
 	}
