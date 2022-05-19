@@ -1494,7 +1494,6 @@ static int simple_display_disable(struct display_state *state)
 	return 0;
 }
 
-#if 0
 static struct rockchip_panel *rockchip_of_find_panel(struct udevice *dev)
 {
 	ofnode panel_node, ports, port, ep;
@@ -1554,8 +1553,9 @@ static struct rockchip_panel *rockchip_of_find_panel(struct udevice *dev)
 found:
 	return (struct rockchip_panel *)dev_get_driver_data(panel_dev);
 }
-#else
-static struct rockchip_panel *rockchip_of_find_panel(struct display_state *state, bool is_bridge)
+
+/* Firefly rk3399-Face-X2 */
+static struct rockchip_panel *firefly_of_find_panel(struct display_state *state, bool is_bridge)
 {
 	ofnode panel_node, ports, port, ep;
 	struct udevice *panel_dev;
@@ -1661,7 +1661,7 @@ failed:
 found:
 	return (struct rockchip_panel *)dev_get_driver_data(panel_dev);
 }
-#endif
+
 
 static struct rockchip_bridge *rockchip_of_find_bridge(struct udevice *conn_dev)
 {
@@ -1890,10 +1890,19 @@ static int rockchip_display_probe(struct udevice *dev)
 		s->crtc_state.crtc_id = get_crtc_id(np_to_ofnode(ep_node));
 		s->node = node;
 
+		/* Firefly rk3399-Face-X2 */
 		if (bridge)
-			panel = rockchip_of_find_panel(s, true);
+			panel = firefly_of_find_panel(s, true);
 		else
-			panel = rockchip_of_find_panel(s, false);
+			panel = firefly_of_find_panel(s, false);
+
+		if (!panel)
+		{
+			if (bridge)
+				panel = rockchip_of_find_panel(bridge->dev);
+			else
+				panel = rockchip_of_find_panel(conn_dev);
+		}
 
 		if (bridge)
 			bridge->state = s;

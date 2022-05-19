@@ -371,12 +371,12 @@ static void panel_simple_getId(struct rockchip_panel *panel)
 
 	while ((ret < 0) && (cnt > 0)) {
 		ret = mipi_dsi_set_maximum_return_packet_size(dsi, 3);
-		if (ret) {
-			printf("failed to set maximum return packet size: %d\n", ret);
-		}
+		// if (ret) {
+		// 	printf("failed to set maximum return packet size: %d\n", ret);
+		// }
 		ret = mipi_dsi_dcs_read(dsi, plat->id_reg, buf, ARRAY_SIZE(buf));
 		if (ret < 0 || ret < ARRAY_SIZE(buf)) {
-			printf("failed to read dcs id: %d\n", ret);
+			//printf("failed to read dcs id: %d\n", ret);
 			cnt--;
 		}
 	}
@@ -384,7 +384,8 @@ static void panel_simple_getId(struct rockchip_panel *panel)
 	printf("Panel id: 0x%x, 0x%x, 0x%x\n", buf[0], buf[1], buf[2]);
 	snprintf(panel_id, ARRAY_SIZE(panel_id), "0x%x%x%x", buf[0], buf[1], buf[2]);
 	if (!strcmp(panel_id, "0xffffff")) {
-		printf("panel id error\n");
+		/*Panel id error,or this board shouldn't be the Face-X2*/
+		//printf("panel id error\n");
 		return;
 	}
 
