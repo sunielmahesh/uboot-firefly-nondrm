@@ -40,13 +40,13 @@ static int do_rkimg_test(cmd_tbl_t *cmdtp, int flag,
 		else
 			printf("Found IDB in U-disk\n");
 
-		// /* TAG in IDB */
-		// if (0 == buffer[128 + 104 / 4]) {
-		// 	if (!strcmp("mmc", argv[1]))
-		// 		env_update("bootargs", "sdfwupdate");
-		// 	else
-		// 		env_update("bootargs", "usbfwupdate");
-		// }
+		/* TAG in IDB */
+		if (0 == buffer[128 + 104 / 4]) {
+			if (!strcmp("mmc", argv[1]))
+				env_update("bootargs", "sdfwupdate");
+			else
+				env_update("bootargs", "usbfwupdate");
+		}
 	} else {
 		ret = CMD_RET_FAILURE;
 	}
