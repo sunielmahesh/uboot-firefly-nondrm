@@ -92,6 +92,7 @@ bool dev_read_bool(struct udevice *dev, const char *propname);
  * subnode)
  */
 ofnode dev_read_subnode(struct udevice *dev, const char *subbnode_name);
+ofnode dev_read_subnode_rk3328(struct udevice *dev, const char *subbnode_name);
 
 /**
  * dev_read_size() - read the size of a property

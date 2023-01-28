@@ -28,6 +28,7 @@ static int rk3399_hdmi_enable(struct udevice *dev, int panel_bpp,
 	int vop_id = uc_plat->source_id;
 	struct rk3399_grf_regs *grf = priv->grf;
 
+	printf("%s:\n",__func__);
 	/* select the hdmi encoder input data from our source_id */
 	rk_clrsetreg(&grf->soc_con20, GRF_RK3399_HDMI_VOP_SEL_MASK,
 		     (vop_id == 1) ? GRF_RK3399_HDMI_VOP_SEL_L : 0);
@@ -40,6 +41,7 @@ static int rk3399_hdmi_ofdata_to_platdata(struct udevice *dev)
 	struct rk_hdmi_priv *priv = dev_get_priv(dev);
 	struct dw_hdmi *hdmi = &priv->hdmi;
 
+	printf("%s:\n",__func__);
 	hdmi->i2c_clk_high = 0x7a;
 	hdmi->i2c_clk_low = 0x8d;
 
@@ -57,6 +59,7 @@ static int rk3399_hdmi_probe(struct udevice *dev)
 	rk_hdmi_probe_regulators(dev, rk3399_regulator_names,
 				 ARRAY_SIZE(rk3399_regulator_names));
 
+	printf("%s:\n",__func__);
 	return rk_hdmi_probe(dev);
 }
 

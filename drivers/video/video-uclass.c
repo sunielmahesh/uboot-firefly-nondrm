@@ -72,9 +72,7 @@ static ulong alloc_fb(struct udevice *dev, ulong *addrp)
 
 int video_reserve(ulong *addrp)
 {
-#ifndef CONFIG_DRM_ROCKCHIP
 	struct udevice *dev;
-#endif
 	ulong size;
 
 	gd->video_top = *addrp;
@@ -84,16 +82,17 @@ int video_reserve(ulong *addrp)
 	*addrp &= ~((1 << 20) - 1);
 	debug("Reserving %lx Bytes for video at: %lx\n", size, *addrp);
 #else
+	printf("%s:\n",__func__);
 	for (uclass_find_first_device(UCLASS_VIDEO, &dev);
 	     dev;
 	     uclass_find_next_device(&dev)) {
 		size = alloc_fb(dev, addrp);
-		debug("%s: Reserving %lx bytes at %lx for video device '%s'\n",
+		printf("%s: Reserving %lx bytes at %lx for video device '%s'\n",
 		      __func__, size, *addrp, dev->name);
 	}
 #endif
 	gd->video_bottom = *addrp;
-	debug("Video frame buffers from %lx to %lx\n", gd->video_bottom,
+	printf("Video frame buffers from %lx to %lx\n", gd->video_bottom,
 	      gd->video_top);
 
 	return 0;
@@ -114,6 +113,32 @@ static int video_clear(struct udevice *dev)
 	}
 
 	return 0;
+}
+
+void video_set_default_colors(struct udevice *dev, bool invert)
+{
+        struct video_priv *priv = dev_get_uclass_priv(dev);
+        int fore, back;
+
+        if (CONFIG_IS_ENABLED(SYS_WHITE_ON_BLACK)) {
+                /* White is used when switching to bold, use light gray here */
+                fore = VID_LIGHT_GRAY;
+                back = VID_BLACK;
+        } else {
+                fore = VID_BLACK;
+                back = VID_WHITE;
+        }
+        if (invert) {
+                int temp;
+
+                temp = fore;
+                fore = back;
+                back = temp;
+        }
+        priv->fg_col_idx = fore;
+        priv->bg_col_idx = back;
+        priv->colour_fg = vid_console_color(priv, fore);
+        priv->colour_bg = vid_console_color(priv, back);
 }
 
 /* Flush video activity to the caches */
@@ -200,18 +225,24 @@ static int video_post_probe(struct udevice *dev)
 	struct udevice *cons;
 	int ret;
 
-	/* Set up the line and display size */
-	priv->fb = map_sysmem(plat->base, plat->size);
-	priv->line_length = priv->xsize * VNBYTES(priv->bpix);
-	priv->fb_size = priv->line_length * priv->ysize;
+	printf("%s:\n",__func__);
 
-	/* Set up colours - we could in future support other colours */
-#ifdef CONFIG_SYS_WHITE_ON_BLACK
-	priv->colour_fg = 0xffffff;
-#else
-	priv->colour_bg = 0xffffff;
-#endif
-	video_clear(dev);
+	/* Set up the line and display size */
+        priv->fb = map_sysmem(plat->base, plat->size);
+        if (!priv->line_length)
+                priv->line_length = priv->xsize * VNBYTES(priv->bpix);
+
+        priv->fb_size = priv->line_length * priv->ysize;
+
+        if (IS_ENABLED(CONFIG_VIDEO_COPY) && plat->copy_base)
+                priv->copy_fb = map_sysmem(plat->copy_base, plat->size);
+
+        /* Set up colors  */
+        video_set_default_colors(dev, false);
+
+        if (!CONFIG_IS_ENABLED(NO_FB_CLEAR))
+                video_clear(dev);
+
 
 	/*
 	 * Create a text console device. For now we always do this, although
@@ -242,13 +273,13 @@ static int video_post_probe(struct udevice *dev)
 		drv_name = priv->vidconsole_drv_name;
 	ret = device_bind_driver(dev, drv_name, str, &cons);
 	if (ret) {
-		debug("%s: Cannot bind console driver\n", __func__);
+		printf("%s: Cannot bind console driver\n", __func__);
 		return ret;
 	}
 
 	ret = device_probe(cons);
 	if (ret) {
-		debug("%s: Cannot probe console driver\n", __func__);
+		printf("%s: Cannot probe console driver\n", __func__);
 		return ret;
 	}
 
@@ -261,17 +292,21 @@ static int video_post_bind(struct udevice *dev)
 	ulong addr = gd->video_top;
 	ulong size;
 
+	printf("gd->video_top: 0x%lx\n", gd->video_top);
+	printf("gd->video_bottom: 0x%lx\n", gd->video_bottom);
 	/* Before relocation there is nothing to do here */
 	if ((!gd->flags & GD_FLG_RELOC))
 		return 0;
 	size = alloc_fb(dev, &addr);
+	printf("addr: 0x%lx\n", addr);
+	printf("size: %lx\n", size);
 	if (addr < gd->video_bottom) {
 		/* Device tree node may need the 'u-boot,dm-pre-reloc' tag */
 		printf("Video device '%s' cannot allocate frame buffer memory -ensure the device is set up before relocation\n",
 		       dev->name);
 		return -ENOSPC;
 	}
-	debug("%s: Claiming %lx bytes at %lx for video device '%s'\n",
+	printf("%s: Claiming %lx bytes at %lx for video device '%s'\n",
 	      __func__, size, addr, dev->name);
 	gd->video_bottom = addr;
 

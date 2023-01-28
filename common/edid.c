@@ -1722,6 +1722,103 @@ int edid_get_drm_mode(u8 *buf, int buf_size, struct drm_display_mode *mode,
 	return 0;
 }
 
+static bool edid_find_valid_timing(void *buf, int count,
+                                   struct display_timing *timing,
+                                   bool (*mode_valid)(void *priv,
+                                        const struct display_timing *timing),
+                                   void *mode_valid_priv)
+{
+        struct edid_detailed_timing *t = buf;
+        bool found = false;
+        int i;
+
+        printf("in edid_find_valid_timing\n");
+        for (i = 0; i < count && !found; i++, t++)
+                if (EDID_DETAILED_TIMING_PIXEL_CLOCK(*t) != 0) {
+                        decode_timing((u8 *)t, timing);
+                        if (mode_valid)
+                                found = mode_valid(mode_valid_priv,
+                                                   timing);
+                        else
+                                found = true;
+                }
+
+        return found;
+}
+
+int edid_get_timing_validate(u8 *buf, int buf_size,
+                             struct display_timing *timing,
+                             int *panel_bits_per_colourp,
+                             bool (*mode_valid)(void *priv,
+                                        const struct display_timing *timing),
+                             void *mode_valid_priv)
+{
+	struct edid1_info *edid = (struct edid1_info *)buf;
+        bool found;
+
+        printf("in edid_get_timing_validate\n");
+        if (buf_size < sizeof(*edid) || edid_check_info(edid)) {
+                debug("%s: Invalid buffer\n", __func__);
+                return -EINVAL;
+        }
+
+        if (!EDID1_INFO_VIDEO_INPUT_DIGITAL(*edid)) {
+                printf("%s: Not a digital display\n", __func__);
+                return -ENOSYS;
+        }
+
+        if (!EDID1_INFO_FEATURE_PREFERRED_TIMING_MODE(*edid)) {
+                printf("%s: No preferred timing\n", __func__);
+                return -ENOENT;
+        }
+
+        /* Look for detailed timing in base EDID */
+        found = edid_find_valid_timing(edid->monitor_details.descriptor, 4,
+                                       timing, mode_valid, mode_valid_priv);
+
+        /* Look for detailed timing in CTA-861 Extension Block */
+        if (!found && edid->extension_flag && buf_size >= EDID_EXT_SIZE) {
+                struct edid_cea861_info *info =
+                        (struct edid_cea861_info *)(buf + sizeof(*edid));
+
+                if (info->extension_tag == EDID_CEA861_EXTENSION_TAG) {
+                        int count = EDID_CEA861_DTD_COUNT(*info);
+                        int offset = info->dtd_offset;
+                        int size = count * sizeof(struct edid_detailed_timing);
+
+                        if (offset >= 4 && offset + size < EDID_SIZE)
+                                found = edid_find_valid_timing(
+                                        (u8 *)info + offset, count, timing,
+                                        mode_valid, mode_valid_priv);
+                }
+        }
+
+        if (!found)
+                return -EINVAL;
+
+	if (edid->version != 1 || edid->revision < 4) {
+                printf("%s: EDID version %d.%d does not have required info\n",
+                      __func__, edid->version, edid->revision);
+                *panel_bits_per_colourp = -1;
+        } else  {
+                *panel_bits_per_colourp =
+                        ((edid->video_input_definition & 0x70) >> 3) + 4;
+        }
+
+        timing->hdmi_monitor = false;
+        printf("%s: timing.hdmi_monitor: %u\n",__func__, timing->hdmi_monitor);
+        if (edid->extension_flag && (buf_size >= EDID_EXT_SIZE)) {
+                struct edid_cea861_info *info =
+                        (struct edid_cea861_info *)(buf + sizeof(*edid));
+
+                if (info->extension_tag == EDID_CEA861_EXTENSION_TAG)
+                        timing->hdmi_monitor = cea_is_hdmi_vsdb_present(info);
+        }
+        printf("%s: timing.hdmi_monitor: end: %u\n",__func__, timing->hdmi_monitor);
+
+        return 0;
+}
+
 int edid_get_timing(u8 *buf, int buf_size, struct display_timing *timing,
 		    int *panel_bits_per_colourp)
 {

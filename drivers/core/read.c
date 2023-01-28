@@ -35,6 +35,11 @@ ofnode dev_read_subnode(struct udevice *dev, const char *subnode_name)
 	return ofnode_find_subnode(dev_ofnode(dev), subnode_name);
 }
 
+ofnode dev_read_subnode_rk3328(struct udevice *dev, const char *subnode_name)
+{
+        return ofnode_find_subnode_rk3328(dev_ofnode(dev), subnode_name);
+}
+
 ofnode dev_read_first_subnode(struct udevice *dev)
 {
 	return ofnode_first_subnode(dev_ofnode(dev));

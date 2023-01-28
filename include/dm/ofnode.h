@@ -305,6 +305,7 @@ bool ofnode_read_bool(ofnode node, const char *propname);
  * subnode)
  */
 ofnode ofnode_find_subnode(ofnode node, const char *subnode_name);
+ofnode ofnode_find_subnode_rk3328(ofnode node, const char *subnode_name);
 
 /**
  * ofnode_first_subnode() - find the first subnode of a parent node

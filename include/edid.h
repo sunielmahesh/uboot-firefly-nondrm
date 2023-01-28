@@ -859,4 +859,11 @@ void drm_rk_filter_whitelist(struct hdmi_edid_data *edid_data);
 void drm_rk_select_mode(struct hdmi_edid_data *edid_data,
 			struct base_screen_info *screen_info);
 
+int edid_get_timing_validate(u8 *buf, int buf_size,
+                             struct display_timing *timing,
+                             int *panel_bits_per_colourp,
+                             bool (*mode_valid)(void *priv,
+                                        const struct display_timing *timing),
+                             void *mode_valid_priv);
+
 #endif /* __EDID_H_ */

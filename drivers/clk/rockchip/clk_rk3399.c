@@ -753,6 +753,7 @@ static ulong rk3399_vop_set_clk(struct rk3399_cru *cru, ulong clk_id, u32 hz)
 	void *aclkreg_addr, *dclkreg_addr;
 	u32 div = 1;
 
+	printf("%s: clk_id: %lu\n",__func__,clk_id);
 	switch (clk_id) {
 	case DCLK_VOP0:
 		aclkreg_addr = &cru->clksel_con[47];
@@ -789,6 +790,7 @@ static ulong rk3399_vop_set_clk(struct rk3399_cru *cru, ulong clk_id, u32 hz)
 		     DCLK_VOP_DCLK_SEL_DIVOUT << DCLK_VOP_DCLK_SEL_SHIFT |
 		     (1 - 1) << DCLK_VOP_DIV_CON_SHIFT);
 
+	printf("%s: hz: %u\n",__func__,hz);
 	return hz;
 }
 

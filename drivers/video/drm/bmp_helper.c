@@ -18,6 +18,7 @@
 static void draw_unencoded_bitmap(uint16_t **dst, uint8_t *bmap, uint16_t *cmap,
 				  uint32_t cnt)
 {
+//	printf("draw_unencoded_bitmap\n");
 	while (cnt > 0) {
 		*(*dst)++ = cmap[*bmap++];
 		cnt--;
@@ -28,6 +29,7 @@ static void draw_encoded_bitmap(uint16_t **dst, uint16_t c, uint32_t cnt)
 {
 	uint16_t *fb = *dst;
 	int cnt_8copy = cnt >> 3;
+//	printf("draw_encoded_bitmap\n");
 
 	cnt -= cnt_8copy << 3;
 	while (cnt_8copy > 0) {
@@ -59,6 +61,7 @@ static void decode_rle8_bitmap(void *psrc, void *pdst, uint16_t *cmap,
 	uint8_t *bmap = psrc;
 	uint8_t *dst = pdst;
 
+	printf("decode_rle8_bitmap\n");
 	if (flip) {
 		y = height - 1;
 		dst = pdst + y * linesize;
@@ -151,6 +154,7 @@ int bmpdecoder(void *bmp_addr, void *pdst, int dst_bpp)
 	uint16_t *cmap;
 	uint8_t *cmap_base;
 
+	printf("bmpdecoder\n");
 	if (!bmp || !(bmp->header.signature[0] == 'B' &&
 	    bmp->header.signature[1] == 'M')) {
 		printf("cat not find bmp file\n");

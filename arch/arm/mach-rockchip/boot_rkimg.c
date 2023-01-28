@@ -204,7 +204,7 @@ struct blk_desc *rockchip_get_bootdev(void)
 
 	if (dev_desc)
 		return dev_desc;
-
+	printf("rockchip_get_bootdev\n");
 	boot_devtype_init();
 	dev_type = get_bootdev_type();
 	devnum = env_get_ulong("devnum", 10, 0);

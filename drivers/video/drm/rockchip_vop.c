@@ -28,11 +28,13 @@
 
 static inline int us_to_vertical_line(struct drm_display_mode *mode, int us)
 {
+	printf("us_to_vertical_line\n");
 	return us * mode->clock / mode->htotal / 1000;
 }
 
 static int to_vop_csc_mode(int csc_mode)
 {
+	printf("to_vop_csc_mode\n");
 	switch (csc_mode) {
 	case V4L2_COLORSPACE_SMPTE170M:
 		return CSC_BT601L;
@@ -50,6 +52,7 @@ static int to_vop_csc_mode(int csc_mode)
 
 static bool is_yuv_output(uint32_t bus_format)
 {
+	printf("is_yuv_output\n");
 	switch (bus_format) {
 	case MEDIA_BUS_FMT_YUV8_1X24:
 	case MEDIA_BUS_FMT_YUV10_1X30:
@@ -72,6 +75,7 @@ static bool is_uv_swap(uint32_t bus_format, uint32_t output_mode)
 	 *
 	 * From H/W testing, YUV444 mode need a rb swap.
 	 */
+	printf("is_uv_swap\n");
 	if ((bus_format == MEDIA_BUS_FMT_YUV8_1X24 ||
 	     bus_format == MEDIA_BUS_FMT_YUV10_1X30) &&
 	    (output_mode == ROCKCHIP_OUT_MODE_AAAA ||
@@ -90,6 +94,7 @@ static int rockchip_vop_init_gamma(struct vop *vop, struct display_state *state)
 	int i, lut_len;
 	u32 *lut_regs;
 
+	printf("rockchip_vop_init_gamma\n");
 	if (!conn_state->gamma.lut)
 		return 0;
 
@@ -146,6 +151,7 @@ static void vop_post_config(struct display_state *state, struct vop *vop)
 	u16 vsize = vdisplay * (conn_state->overscan.top_margin + conn_state->overscan.bottom_margin) / 200;
 	u16 hact_end, vact_end;
 	u32 val;
+	printf("vop_post_config\n");
 
 	if (mode->flags & DRM_MODE_FLAG_INTERLACE)
 		vsize = round_down(vsize, 2);
@@ -181,6 +187,7 @@ static void vop_post_config(struct display_state *state, struct vop *vop)
 static void vop_mcu_mode(struct display_state *state, struct vop *vop)
 {
 	struct crtc_state *crtc_state = &state->crtc_state;
+	printf("vop_mcu_mode\n");
 
 	VOP_CTRL_SET(vop, mcu_clk_sel, 1);
 	VOP_CTRL_SET(vop, mcu_type, 1);
@@ -196,6 +203,7 @@ static void vop_mcu_mode(struct display_state *state, struct vop *vop)
 static int rockchip_vop_preinit(struct display_state *state)
 {
 	const struct vop_data *vop_data = state->crtc_state.crtc->data;
+	printf("rockchip_vop_preinit\n");
 
 	state->crtc_state.max_output = vop_data->max_output;
 
@@ -226,6 +234,7 @@ static int rockchip_vop_init(struct display_state *state)
 	bool yuv_overlay = false, post_r2y_en = false, post_y2r_en = false;
 	u16 post_csc_mode;
 	bool dclk_inv;
+	printf("rockchip_vop_init\n");
 
 	vop = malloc(sizeof(*vop));
 	if (!vop)
@@ -468,6 +477,7 @@ static uint16_t scl_vop_cal_scale(enum scale_mode mode, uint32_t src,
 {
 	uint16_t val = 1 << SCL_FT_DEFAULT_FIXPOINT_SHIFT;
 
+	printf("scl_vop_cal_scale\n");
 	if (is_horizontal) {
 		if (mode == SCALE_UP)
 			val = GET_SCL_FT_BIC(src, dst);
@@ -510,6 +520,7 @@ static void scl_vop_cal_scl_fac(struct vop *vop,
 	uint32_t val;
 	int vskiplines = 0;
 
+	printf("scl_vop_cal_scl_fac\n");
 	if (!vop->win->scl)
 		return;
 
@@ -597,6 +608,7 @@ static void scl_vop_cal_scl_fac(struct vop *vop,
 static void vop_load_csc_table(struct vop *vop, u32 offset, const u32 *table)
 {
 	int i;
+	printf("vop_load_csc_table\n");
 
 	/*
 	 * so far the csc offset is not 0 and in the feature the csc offset
@@ -615,6 +627,7 @@ static int rockchip_vop_setup_csc_table(struct display_state *state)
 	struct connector_state *conn_state = &state->conn_state;
 	struct vop *vop = crtc_state->private;
 	const uint32_t *csc_table = NULL;
+	printf("rockchip_vop_setup_csc_table\n");
 
 	if (!vop->csc_table || !crtc_state->yuv_overlay)
 		return 0;
@@ -660,6 +673,7 @@ static int rockchip_vop_set_plane(struct display_state *state)
 	int xvir = crtc_state->xvir;
 	int x_mirror = 0, y_mirror = 0;
 
+	printf("rockchip_vop_set_plane\n");
 	if ((crtc_w > crtc_state->max_output.width) ||
 	    (crtc_h > crtc_state->max_output.height)){
 		printf("Maximum destination %dx%d exceeded\n",
@@ -735,6 +749,7 @@ static int rockchip_vop_enable(struct display_state *state)
 {
 	struct crtc_state *crtc_state = &state->crtc_state;
 	struct vop *vop = crtc_state->private;
+	printf("rockchip_vop_enable\n");
 
 	VOP_CTRL_SET(vop, standby, 0);
 	vop_cfg_done(vop);
@@ -748,6 +763,7 @@ static int rockchip_vop_disable(struct display_state *state)
 {
 	struct crtc_state *crtc_state = &state->crtc_state;
 	struct vop *vop = crtc_state->private;
+	printf("rockchip_vop_disable\n");
 
 	VOP_CTRL_SET(vop, standby, 1);
 	vop_cfg_done(vop);
@@ -802,6 +818,7 @@ static int rockchip_vop_send_mcu_cmd(struct display_state *state,
 	struct crtc_state *crtc_state = &state->crtc_state;
 	struct vop *vop = crtc_state->private;
 
+	printf("rockchip_vop_send_mcu_cmd\n");
 	if (vop) {
 		switch (type) {
 		case MCU_WRCMD:

@@ -11,7 +11,8 @@
 #include <dm.h>
 #include <regmap.h>
 #include <video.h>
-#include <asm/hardware.h>
+#include <asm/arch-rockchip/hardware.h>
+#include <asm/global_data.h>
 #include <asm/io.h>
 #include "rk_vop.h"
 
@@ -23,12 +24,14 @@ static void rk3399_set_pin_polarity(struct udevice *dev,
 	struct rk_vop_priv *priv = dev_get_priv(dev);
 	struct rk3288_vop *regs = priv->regs;
 
+	printf("%s: priv->regs:0x%lx: priv->grf:0x%lx\n",__func__,(long unsigned int)priv->regs,(long unsigned int)priv->grf);
 	/*
 	 * The RK3399 VOPs (v3.5 and v3.6) require a per-mode setting of
 	 * the polarity configuration (in ctrl1).
 	 */
 	switch (mode) {
 	case VOP_MODE_HDMI:
+		printf("rk3399_set_pin_polarity: in VOP_MODE_HDMI, regs->dsp_ctrl1:0x%lx\n", (long unsigned int)&regs->dsp_ctrl1);
 		clrsetbits_le32(&regs->dsp_ctrl1,
 				M_RK3399_DSP_HDMI_POL,
 				V_RK3399_DSP_HDMI_POL(polarity));
@@ -51,6 +54,7 @@ static void rk3399_set_pin_polarity(struct udevice *dev,
 	default:
 		debug("%s: unsupported output mode %x\n", __func__, mode);
 	}
+	printf("after switch rk3399_set_pin_polarity\n");
 }
 
 /*
@@ -67,6 +71,7 @@ static int rk3399_vop_probe(struct udevice *dev)
 	if (!(gd->flags & GD_FLG_RELOC))
 		return 0;
 
+	printf("%s:\n",__func__);
 	/* Probe regulators required for the RK3399 VOP */
 	rk_vop_probe_regulators(dev, rk3399_regulator_names,
 				ARRAY_SIZE(rk3399_regulator_names));

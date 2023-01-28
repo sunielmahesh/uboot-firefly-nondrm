@@ -157,6 +157,7 @@ static int stdio_probe_device(const char *name, enum uclass_id id,
 	struct udevice *dev;
 	int seq, ret;
 
+	printf("%s:\n",__func__);
 	*sdevp = NULL;
 	seq = trailing_strtoln(name, NULL);
 	if (seq == -1)
@@ -165,7 +166,7 @@ static int stdio_probe_device(const char *name, enum uclass_id id,
 	if (ret == -ENODEV)
 		ret = uclass_first_device_err(id, &dev);
 	if (ret) {
-		debug("No %s device for seq %d (%s)\n", uclass_get_name(id),
+		printf("No %s device for seq %d (%s)\n", uclass_get_name(id),
 		      seq, name);
 		return ret;
 	}
@@ -173,7 +174,7 @@ static int stdio_probe_device(const char *name, enum uclass_id id,
 	sdev = list_empty(&devs.list) ? NULL :
 			list_last_entry(&devs.list, struct stdio_dev, list);
 	if (!sdev || strcmp(sdev->name, name)) {
-		debug("Device '%s' did not register with stdio as '%s'\n",
+		printf("Device '%s' did not register with stdio as '%s'\n",
 		      dev->name, name);
 		return -ENOENT;
 	}
@@ -191,6 +192,7 @@ struct stdio_dev *stdio_get_by_name(const char *name)
 	if (!name)
 		return NULL;
 
+	printf("%s:\n",__func__);
 	list_for_each(pos, &(devs.list)) {
 		sdev = list_entry(pos, struct stdio_dev, list);
 		if (strcmp(sdev->name, name) == 0)

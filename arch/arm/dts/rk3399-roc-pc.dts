@@ -649,16 +649,16 @@
 
 };
 
-&route_hdmi {
-	status = "okay";
-};
+//&route_hdmi {
+//	status = "okay";
+//};
 
 &vopb {
 	status = "okay";
 };
 
 &vopl {
-	status = "disabled";
+	status = "okay";
 };
 
 &hdmi_in_vopb {
@@ -666,10 +666,13 @@
 };
 
 &hdmi_in_vopl {
-	status = "disabled";
+	status = "okay";
 };
 
 &hdmi {
+	ddc-i2c-bus = <&i2c3>;
+        pinctrl-names = "default";
+        pinctrl-0 = <&hdmi_cec>;
 	status = "okay";
 };
 

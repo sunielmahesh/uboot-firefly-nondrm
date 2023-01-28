@@ -840,6 +840,7 @@ int console_init_r(void)
 	int iomux_err = 0;
 #endif
 
+	printf("%s:\n",__func__);
 	/* set default handlers at first */
 	gd->jt->getc  = serial_getc;
 	gd->jt->tstc  = serial_tstc;
@@ -853,6 +854,10 @@ int console_init_r(void)
 	stdoutname = env_get("stdout");
 	stderrname = env_get("stderr");
 
+	printf("%s: stdin: %s\n",__func__, stdinname);
+        printf("%s: stdout: %s\n",__func__, stdoutname);
+        printf("%s: stderr: %s\n",__func__, stderrname);
+
 	if (OVERWRITE_CONSOLE == 0) {	/* if not overwritten by config switch */
 		inputdev  = search_device(DEV_FLAGS_INPUT,  stdinname);
 		outputdev = search_device(DEV_FLAGS_OUTPUT, stdoutname);
@@ -861,9 +866,11 @@ int console_init_r(void)
 		iomux_err = iomux_doenv(stdin, stdinname);
 		iomux_err += iomux_doenv(stdout, stdoutname);
 		iomux_err += iomux_doenv(stderr, stderrname);
-		if (!iomux_err)
+		if (!iomux_err) {
+			printf("%s: stdin: iomux_err: Successful, so skip all the code below\n",__func__);
 			/* Successful, so skip all the code below. */
 			goto done;
+		}
 #endif
 	}
 	/* if the devices are overwritten or not found, use default device */
@@ -917,6 +924,11 @@ done:
 		return 0;
 #endif
 	print_pre_console_buffer(PRE_CONSOLE_FLUSHPOINT2_EVERYTHING_BUT_SERIAL);
+
+	printf("%s: end stdin: %s\n",__func__, stdinname);
+        printf("%s: end stdout: %s\n",__func__, stdoutname);
+        printf("%s: end stderr: %s\n",__func__, stderrname);
+
 	return 0;
 }
 

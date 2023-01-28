@@ -198,6 +198,7 @@ static unsigned int drm_rk_select_color(struct hdmi_edid_data *edid_data,
 	if (screen_info)
 		base_color = screen_info->format;
 
+	printf("drm_rk_select_color\n");
 	switch (base_color) {
 	case DRM_HDMI_OUTPUT_YCBCR_HQ:
 		if (info->color_formats & DRM_COLOR_FORMAT_YCRCB444)
@@ -206,6 +207,7 @@ static unsigned int drm_rk_select_color(struct hdmi_edid_data *edid_data,
 			color_format = DRM_HDMI_OUTPUT_YCBCR422;
 		else if (mode_420)
 			color_format = DRM_HDMI_OUTPUT_YCBCR420;
+		printf("DRM_HDMI_OUTPUT_YCBCR_HQ: %u\n", color_format);
 		break;
 	case DRM_HDMI_OUTPUT_YCBCR_LQ:
 		if (mode_420)
@@ -214,21 +216,27 @@ static unsigned int drm_rk_select_color(struct hdmi_edid_data *edid_data,
 			color_format = DRM_HDMI_OUTPUT_YCBCR422;
 		else if (info->color_formats & DRM_COLOR_FORMAT_YCRCB444)
 			color_format = DRM_HDMI_OUTPUT_YCBCR444;
+		printf("DRM_HDMI_OUTPUT_YCBCR_LQ: %u\n", color_format);
 		break;
 	case DRM_HDMI_OUTPUT_YCBCR420:
 		if (mode_420)
 			color_format = DRM_HDMI_OUTPUT_YCBCR420;
+		printf("DRM_HDMI_OUTPUT_YCBCR420: %u\n", color_format);
 		break;
 	case DRM_HDMI_OUTPUT_YCBCR422:
 		if (info->color_formats & DRM_COLOR_FORMAT_YCRCB422)
 			color_format = DRM_HDMI_OUTPUT_YCBCR422;
+		printf("DRM_HDMI_OUTPUT_YCBCR422: %u\n", color_format);
 		break;
 	case DRM_HDMI_OUTPUT_YCBCR444:
 		if (info->color_formats & DRM_COLOR_FORMAT_YCRCB444)
 			color_format = DRM_HDMI_OUTPUT_YCBCR444;
+		printf("DRM_HDMI_OUTPUT_YCBCR444: %u\n", color_format);
 		break;
 	case DRM_HDMI_OUTPUT_DEFAULT_RGB:
+		printf("DRM_HDMI_OUTPUT_DEFAULT_RGB\n");
 	default:
+		printf("drm_rk_select_color: break\n");
 		break;
 	}
 
@@ -245,6 +253,7 @@ static unsigned int drm_rk_select_color(struct hdmi_edid_data *edid_data,
 	    info->hdmi.y420_dc_modes & DRM_EDID_YCBCR420_DC_30)
 		support_dc = true;
 
+	printf("drm_rk_select_color: support_dc: %d\n", support_dc);
 	if (mode->flags & DRM_MODE_FLAG_DBLCLK)
 		pixclock *= 2;
 
@@ -264,13 +273,17 @@ static unsigned int drm_rk_select_color(struct hdmi_edid_data *edid_data,
 
 	switch (dev_type) {
 	case RK3368_HDMI:
+		printf("drm_rk_select_color: RK3368_HDMI\n");
 		max_tmds_clock = min(max_tmds_clock, 340000);
 		break;
 	case RK3328_HDMI:
+		printf("drm_rk_select_color: RK3328_HDMI\n");
 	case RK3228_HDMI:
+		printf("drm_rk_select_color: RK3228_HDMI\n");
 		max_tmds_clock = min(max_tmds_clock, 371250);
 		break;
 	default:
+		printf("drm_rk_select_color: dev_type:default\n");
 		max_tmds_clock = min(max_tmds_clock, 594000);
 		break;
 	}
@@ -286,11 +299,17 @@ static unsigned int drm_rk_select_color(struct hdmi_edid_data *edid_data,
 			if (drm_mode_is_420(info, mode))
 				color_format = DRM_HDMI_OUTPUT_YCBCR420;
 		}
+
 	}
+	printf("tmdsclock > max_tmds_clock: %u\n", color_depth);
+	printf("tmdsclock > max_tmds_clock: %u\n", color_format);
 
 	if (color_depth > 8 && support_dc) {
-		if (dev_type == RK3288_HDMI)
+		if (dev_type == RK3288_HDMI) {
+			printf("if dev_type == RK3288_HDMI\n");
 			return MEDIA_BUS_FMT_RGB101010_1X30;
+		}
+		printf("if switch color_format\n");
 		switch (color_format) {
 		case DRM_HDMI_OUTPUT_YCBCR444:
 			return MEDIA_BUS_FMT_YUV10_1X30;
@@ -302,8 +321,11 @@ static unsigned int drm_rk_select_color(struct hdmi_edid_data *edid_data,
 			return MEDIA_BUS_FMT_RGB101010_1X30;
 		}
 	} else {
-		if (dev_type == RK3288_HDMI)
+		if (dev_type == RK3288_HDMI) {
+			printf("else dev_type == RK3288_HDMI\n");
 			return MEDIA_BUS_FMT_RGB888_1X24;
+		}
+		printf("else switch color_format\n");
 		switch (color_format) {
 		case DRM_HDMI_OUTPUT_YCBCR444:
 			return MEDIA_BUS_FMT_YUV8_1X24;
@@ -332,15 +354,19 @@ void drm_rk_selete_output(struct hdmi_edid_data *edid_data,
 	disk_partition_t part_info;
 	char baseparameter_buf[8 * RK_BLK_SIZE] __aligned(ARCH_DMA_MINALIGN);
 
+	printf("drm_rk_selete_output\n");
 	overscan->left_margin = max_scan;
 	overscan->right_margin = max_scan;
 	overscan->top_margin = max_scan;
 	overscan->bottom_margin = max_scan;
 
-	if (dev_type == RK3288_HDMI)
+	if (dev_type == RK3288_HDMI) {
+		printf("if dev_type == RK3288_HDMI\n");
 		*bus_format = MEDIA_BUS_FMT_RGB888_1X24;
-	else
+	} else {
+		printf("else: dev_type == RK3288_HDMI\n");
 		*bus_format = MEDIA_BUS_FMT_YUV8_1X24;
+	}
 
 	*bus_format = MEDIA_BUS_FMT_RGB888_1X24;
 	dev_desc = rockchip_get_bootdev();
@@ -348,6 +374,7 @@ void drm_rk_selete_output(struct hdmi_edid_data *edid_data,
 		printf("%s: Could not find device\n", __func__);
 		return;
 	}
+	printf("rockchip_get_bootdev: %d\n", dev_desc->if_type);
 
 	if (part_get_info_by_name(dev_desc, "baseparameter", &part_info) < 0) {
 		printf("Could not find baseparameter partition\n");
@@ -364,25 +391,37 @@ void drm_rk_selete_output(struct hdmi_edid_data *edid_data,
 	memcpy(&base_parameter, baseparameter_buf, sizeof(base_parameter));
 	scan = &base_parameter.scan;
 
-	if (scan->leftscale < min_scan && scan->leftscale > 0)
+	if (scan->leftscale < min_scan && scan->leftscale > 0) {
+		printf("if scan->leftscale\n");
 		overscan->left_margin = min_scan;
-	else if (scan->leftscale < max_scan && scan->leftscale > 0)
+	} else if (scan->leftscale < max_scan && scan->leftscale > 0) {
+		printf("else scan->leftscale\n");
 		overscan->left_margin = scan->leftscale;
+	}
 
-	if (scan->rightscale < min_scan && scan->rightscale > 0)
+	if (scan->rightscale < min_scan && scan->rightscale > 0) {
+		printf("if scan->rightscale\n");
 		overscan->right_margin = min_scan;
-	else if (scan->rightscale < max_scan && scan->rightscale > 0)
+	} else if (scan->rightscale < max_scan && scan->rightscale > 0) {
+		printf("else scan->righttscale\n");
 		overscan->right_margin = scan->rightscale;
+	}
 
-	if (scan->topscale < min_scan && scan->topscale > 0)
+	if (scan->topscale < min_scan && scan->topscale > 0) {
+		printf("scan->topscale\n");
 		overscan->top_margin = min_scan;
-	else if (scan->topscale < max_scan && scan->topscale > 0)
+	} else if (scan->topscale < max_scan && scan->topscale > 0) {
+		printf("else scan->topscale\n");
 		overscan->top_margin = scan->topscale;
+	}
 
-	if (scan->bottomscale < min_scan && scan->bottomscale > 0)
+	if (scan->bottomscale < min_scan && scan->bottomscale > 0) {
+		printf("scan->bottomscale\n");
 		overscan->bottom_margin = min_scan;
-	else if (scan->bottomscale < max_scan && scan->bottomscale > 0)
+	} else if (scan->bottomscale < max_scan && scan->bottomscale > 0) {
+		printf("else scan->bottomscale\n");
 		overscan->bottom_margin = scan->bottomscale;
+	}
 
 	screen_size = sizeof(base_parameter.screen_list) /
 		sizeof(base_parameter.screen_list[0]);
@@ -407,6 +446,7 @@ void drm_rk_selete_output(struct hdmi_edid_data *edid_data,
 
 void inno_dw_hdmi_set_domain(void *grf, int status)
 {
+	printf("inno_dw_hdmi_set_domain\n");
 	if (status)
 		writel(RK3328_IO_5V_DOMAIN, grf + RK3328_GRF_SOC_CON4);
 	else
@@ -417,6 +457,7 @@ void dw_hdmi_set_iomux(void *grf, int dev_type)
 {
 	switch (dev_type) {
 	case RK3328_HDMI:
+		printf("dw_hdmi_set_iomux: RK3328_HDMI\n");
 		writel(RK3328_IO_DDC_IN_MSK, grf + RK3328_GRF_SOC_CON2);
 		writel(RK3328_IO_CTRL_BY_HDMI, grf + RK3328_GRF_SOC_CON3);
 		break;
@@ -492,6 +533,7 @@ const struct dw_hdmi_plat_data rk3399_hdmi_drv_data = {
 
 static int rockchip_dw_hdmi_probe(struct udevice *dev)
 {
+	printf("in rockchip_dw_hdmi_probe\n");
 	return 0;
 }
 

@@ -7,6 +7,8 @@
 #ifndef _ROCKCHIP_CONNECTOR_H_
 #define _ROCKCHIP_CONNECTOR_H_
 
+struct display_state;
+
 struct rockchip_connector {
 	const struct rockchip_connector_funcs *funcs;
 

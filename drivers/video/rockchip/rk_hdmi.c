@@ -75,6 +75,7 @@ static const struct hdmi_mpll_config rockchip_mpll_cfg[] = {
 int rk_hdmi_read_edid(struct udevice *dev, u8 *buf, int buf_size)
 {
 	struct rk_hdmi_priv *priv = dev_get_priv(dev);
+	printf("%s:\n",__func__);
 
 	return dw_hdmi_read_edid(&priv->hdmi, buf, buf_size);
 }
@@ -84,23 +85,28 @@ int rk_hdmi_ofdata_to_platdata(struct udevice *dev)
 	struct rk_hdmi_priv *priv = dev_get_priv(dev);
 	struct dw_hdmi *hdmi = &priv->hdmi;
 
-	hdmi->ioaddr = (ulong)devfdt_get_addr(dev);
+//	hdmi->ioaddr = (ulong)devfdt_get_addr(dev);
+	hdmi->ioaddr = (ulong)dev_read_addr(dev);
 	hdmi->mpll_cfg = rockchip_mpll_cfg;
 	hdmi->phy_cfg = rockchip_phy_config;
-
+	
 	/* hdmi->i2c_clk_{high,low} are set up by the SoC driver */
 
 	hdmi->reg_io_width = 4;
 	hdmi->phy_set = dw_hdmi_phy_cfg;
 
 	priv->grf = syscon_get_first_range(ROCKCHIP_SYSCON_GRF);
+	printf("%s:hdmi->reg_io_width: %u, hdmi->ioaddr: 0x%lx, priv->grf: 0x%lx\n",__func__,hdmi->reg_io_width,hdmi->ioaddr, (long unsigned int)priv->grf);	
 
+	uclass_get_device_by_phandle(UCLASS_I2C, dev, "ddc-i2c-bus",
+                                     &hdmi->ddc_bus);
 	return 0;
 }
 
 void rk_hdmi_probe_regulators(struct udevice *dev,
 			      const char * const *names, int cnt)
 {
+	printf("%s:\n",__func__);
 	rk_vop_probe_regulators(dev, names, cnt);
 }
 
@@ -110,9 +116,10 @@ int rk_hdmi_probe(struct udevice *dev)
 	struct dw_hdmi *hdmi = &priv->hdmi;
 	int ret;
 
+	printf("%s:hdmi->ioaddr: 0x%lx\n",__func__,hdmi->ioaddr);	
 	ret = dw_hdmi_phy_wait_for_hpd(hdmi);
 	if (ret < 0) {
-		debug("hdmi can not get hpd signal\n");
+		printf("hdmi can not get hpd signal\n");
 		return -1;
 	}
 

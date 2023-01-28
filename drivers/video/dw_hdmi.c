@@ -70,10 +70,13 @@ static void hdmi_write(struct dw_hdmi *hdmi, u8 val, int offset)
 
 static u8 hdmi_read(struct dw_hdmi *hdmi, int offset)
 {
+//        printf("%s:hdmi->reg_io_width: %u, hdmi->ioaddr: 0x%lx\n",__func__,hdmi->reg_io_width,hdmi->ioaddr);
 	switch (hdmi->reg_io_width) {
 	case 1:
+//		printf("%s: reg: 0x%lx\n",__func__,hdmi->ioaddr + offset);
 		return readb(hdmi->ioaddr + offset);
 	case 4:
+//		printf("%s: reg: 0x%lx\n",__func__,hdmi->ioaddr + (offset << 2));
 		return readl(hdmi->ioaddr + (offset << 2));
 	default:
 		debug("reg_io_width has unsupported width!\n");
@@ -266,30 +269,35 @@ static void hdmi_phy_i2c_write(struct dw_hdmi *hdmi, uint data, uint addr)
 
 static void hdmi_phy_enable_power(struct dw_hdmi *hdmi, uint enable)
 {
+//	printf("%s:\n",__func__);
 	hdmi_mod(hdmi, HDMI_PHY_CONF0, HDMI_PHY_CONF0_PDZ_MASK,
 		 enable << HDMI_PHY_CONF0_PDZ_OFFSET);
 }
 
 static void hdmi_phy_enable_tmds(struct dw_hdmi *hdmi, uint enable)
 {
+//	printf("%s:\n",__func__);
 	hdmi_mod(hdmi, HDMI_PHY_CONF0, HDMI_PHY_CONF0_ENTMDS_MASK,
 		 enable << HDMI_PHY_CONF0_ENTMDS_OFFSET);
 }
 
 static void hdmi_phy_enable_spare(struct dw_hdmi *hdmi, uint enable)
 {
+//	printf("%s:\n",__func__);
 	hdmi_mod(hdmi, HDMI_PHY_CONF0, HDMI_PHY_CONF0_SPARECTRL_MASK,
 		 enable << HDMI_PHY_CONF0_SPARECTRL_OFFSET);
 }
 
 static void hdmi_phy_gen2_pddq(struct dw_hdmi *hdmi, uint enable)
 {
+//	printf("%s:\n",__func__);
 	hdmi_mod(hdmi, HDMI_PHY_CONF0, HDMI_PHY_CONF0_GEN2_PDDQ_MASK,
 		 enable << HDMI_PHY_CONF0_GEN2_PDDQ_OFFSET);
 }
 
 static void hdmi_phy_gen2_txpwron(struct dw_hdmi *hdmi, uint enable)
 {
+//	printf("%s:\n",__func__);
 	hdmi_mod(hdmi, HDMI_PHY_CONF0,
 		 HDMI_PHY_CONF0_GEN2_TXPWRON_MASK,
 		 enable << HDMI_PHY_CONF0_GEN2_TXPWRON_OFFSET);
@@ -297,6 +305,7 @@ static void hdmi_phy_gen2_txpwron(struct dw_hdmi *hdmi, uint enable)
 
 static void hdmi_phy_sel_data_en_pol(struct dw_hdmi *hdmi, uint enable)
 {
+//	printf("%s:\n",__func__);
 	hdmi_mod(hdmi, HDMI_PHY_CONF0,
 		 HDMI_PHY_CONF0_SELDATAENPOL_MASK,
 		 enable << HDMI_PHY_CONF0_SELDATAENPOL_OFFSET);
@@ -305,6 +314,7 @@ static void hdmi_phy_sel_data_en_pol(struct dw_hdmi *hdmi, uint enable)
 static void hdmi_phy_sel_interface_control(struct dw_hdmi *hdmi,
 					   uint enable)
 {
+//	printf("%s:\n",__func__);
 	hdmi_mod(hdmi, HDMI_PHY_CONF0, HDMI_PHY_CONF0_SELDIPIF_MASK,
 		 enable << HDMI_PHY_CONF0_SELDIPIF_OFFSET);
 }
@@ -314,6 +324,7 @@ static int hdmi_phy_configure(struct dw_hdmi *hdmi, u32 mpixelclock)
 	ulong start;
 	uint i, val;
 
+//	printf("%s:\n",__func__);
 	if (!hdmi->mpll_cfg || !hdmi->phy_cfg)
 		return -1;
 
@@ -394,6 +405,7 @@ static void hdmi_av_composer(struct dw_hdmi *hdmi,
 	uint hbl;
 	uint vbl;
 
+//	printf("%s:\n",__func__);
 	hbl = edid->hback_porch.typ + edid->hfront_porch.typ +
 			edid->hsync_len.typ;
 	vbl = edid->vback_porch.typ + edid->vfront_porch.typ +
@@ -459,6 +471,7 @@ static void hdmi_enable_video_path(struct dw_hdmi *hdmi, bool audio)
 {
 	uint clkdis;
 
+	printf("%s:\n",__func__);
 	/* control period minimum duration */
 	hdmi_write(hdmi, 12, HDMI_FC_CTRLDUR);
 	hdmi_write(hdmi, 32, HDMI_FC_EXCTRLDUR);
@@ -523,6 +536,7 @@ static void hdmi_audio_fifo_reset(struct dw_hdmi *hdmi)
 
 static int hdmi_get_plug_in_status(struct dw_hdmi *hdmi)
 {
+        printf("%s:\n",__func__);
 	uint val = hdmi_read(hdmi, HDMI_PHY_STAT0) & HDMI_PHY_HPD;
 
 	return !!val;
@@ -559,6 +573,20 @@ static int hdmi_read_edid(struct dw_hdmi *hdmi, int block, u8 *buff)
 	u32 trytime = 5;
 	u32 n;
 
+	printf("%s:\n",__func__);
+	if (CONFIG_IS_ENABLED(DM_I2C) && hdmi->ddc_bus) {
+		printf("%s: CONFIG_IS_ENABLED(DM_I2C) && hdmi->ddc_bus\n",__func__);
+                struct udevice *chip;
+
+                edid_read_err = i2c_get_chip(hdmi->ddc_bus,
+                                             HDMI_I2CM_SLAVE_DDC_ADDR,
+                                             1, &chip);
+                if (edid_read_err)
+                        return edid_read_err;
+
+                return dm_i2c_read(chip, shift, buff, HDMI_EDID_BLOCK_SIZE);
+        }
+	printf("%s: write functions start\n",__func__);
 	/* set ddc i2c clk which devided from ddc_clk to 100khz */
 	hdmi_write(hdmi, hdmi->i2c_clk_high, HDMI_I2CM_SS_SCL_HCNT_0_ADDR);
 	hdmi_write(hdmi, hdmi->i2c_clk_low, HDMI_I2CM_SS_SCL_LCNT_0_ADDR);
@@ -568,6 +596,7 @@ static int hdmi_read_edid(struct dw_hdmi *hdmi, int block, u8 *buff)
 	hdmi_write(hdmi, HDMI_I2CM_SLAVE_DDC_ADDR, HDMI_I2CM_SLAVE);
 	hdmi_write(hdmi, HDMI_I2CM_SEGADDR_DDC, HDMI_I2CM_SEGADDR);
 	hdmi_write(hdmi, block >> 1, HDMI_I2CM_SEGPTR);
+	printf("%s: write functions end\n",__func__);
 
 	while (trytime--) {
 		edid_read_err = 0;
@@ -637,6 +666,7 @@ int dw_hdmi_phy_cfg(struct dw_hdmi *hdmi, uint mpixelclock)
 {
 	int i, ret;
 
+	printf("%s:\n",__func__);
 	/* hdmi phy spec says to do the phy initialization sequence twice */
 	for (i = 0; i < 2; i++) {
 		hdmi_phy_sel_data_en_pol(hdmi, 1);
@@ -646,7 +676,7 @@ int dw_hdmi_phy_cfg(struct dw_hdmi *hdmi, uint mpixelclock)
 
 		ret = hdmi_phy_configure(hdmi, mpixelclock);
 		if (ret) {
-			debug("hdmi phy config failure %d\n", ret);
+			printf("hdmi phy config failure %d\n", ret);
 			return ret;
 		}
 	}
@@ -658,6 +688,7 @@ int dw_hdmi_phy_wait_for_hpd(struct dw_hdmi *hdmi)
 {
 	ulong start;
 
+        printf("%s:\n",__func__);
 	start = get_timer(0);
 	do {
 		if (hdmi_get_plug_in_status(hdmi))
@@ -670,6 +701,7 @@ int dw_hdmi_phy_wait_for_hpd(struct dw_hdmi *hdmi)
 
 void dw_hdmi_phy_init(struct dw_hdmi *hdmi)
 {
+	printf("%s:\n",__func__);
 	/* enable phy i2cm done irq */
 	hdmi_write(hdmi, HDMI_PHY_I2CM_INT_ADDR_DONE_POL,
 		   HDMI_PHY_I2CM_INT_ADDR);
@@ -689,15 +721,18 @@ void dw_hdmi_phy_init(struct dw_hdmi *hdmi)
 int dw_hdmi_read_edid(struct dw_hdmi *hdmi, u8 *buf, int buf_size)
 {
 	u32 edid_size = HDMI_EDID_BLOCK_SIZE;
-	int ret;
+	int ret, j, block_num, i;
 
+	u8 *buff;
+
+	printf("%s:\n",__func__);
 	if (0) {
 		edid_size = sizeof(pre_buf);
 		memcpy(buf, pre_buf, edid_size);
 	} else {
 		ret = hdmi_read_edid(hdmi, 0, buf);
 		if (ret) {
-			debug("failed to read edid.\n");
+			printf("failed to read edid.\n");
 			return -1;
 		}
 
@@ -707,6 +742,19 @@ int dw_hdmi_read_edid(struct dw_hdmi *hdmi, u8 *buf, int buf_size)
 		}
 	}
 
+	block_num = buf[0x7e];
+
+	printf("RAW EDID:\n");
+        for (i = 0; i < block_num + 1; i++) {
+                buff = &buf[0x80 * i];
+                for (j = 0; j < HDMI_EDID_BLOCK_SIZE; j++) {
+                        if (j % 16 == 0)
+                                printf("\n");
+                        printf("0x%02x, ", buff[j]);
+                }
+                printf("\n");
+        }
+
 	return edid_size;
 }
 
@@ -714,7 +762,7 @@ int dw_hdmi_enable(struct dw_hdmi *hdmi, const struct display_timing *edid)
 {
 	int ret;
 
-	debug("%s, mode info : clock %d hdis %d vdis %d\n",
+	printf("%s, mode info : clock %d hdis %d vdis %d\n",
 	      edid->hdmi_monitor ? "hdmi" : "dvi",
 	      edid->pixelclock.typ, edid->hactive.typ, edid->vactive.typ);
 
@@ -744,6 +792,7 @@ void dw_hdmi_init(struct dw_hdmi *hdmi)
 {
 	uint ih_mute;
 
+	printf("%s:\n",__func__);
 	/*
 	 * boot up defaults are:
 	 * hdmi_ih_mute   = 0x03 (disabled)

@@ -464,6 +464,24 @@ struct hdmi_phy_config {
 	u32 vlev_ctr;   /* voltage level control */
 };
 
+struct hdmi_vmode {
+        bool mdataenablepolarity;
+
+        unsigned int mpixelclock;
+        unsigned int mpixelrepetitioninput;
+        unsigned int mpixelrepetitionoutput;
+};
+
+struct hdmi_data_info {
+        unsigned int enc_in_bus_format;
+        unsigned int enc_out_bus_format;
+        unsigned int enc_in_encoding;
+        unsigned int enc_out_encoding;
+        unsigned int pix_repet_factor;
+        unsigned int hdcp_enable;
+        struct hdmi_vmode video_mode;
+};
+
 struct dw_hdmi {
 	ulong ioaddr;
 	const struct hdmi_mpll_config *mpll_cfg;
@@ -471,6 +489,8 @@ struct dw_hdmi {
 	u8 i2c_clk_high;
 	u8 i2c_clk_low;
 	u8 reg_io_width;
+	struct hdmi_data_info hdmi_data;
+        struct udevice *ddc_bus;
 
 	int (*phy_set)(struct dw_hdmi *hdmi, uint mpixelclock);
 };

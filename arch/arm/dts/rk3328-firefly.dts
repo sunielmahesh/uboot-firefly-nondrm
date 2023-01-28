@@ -117,6 +117,18 @@
 	status = "okay";
 };
 
+&hdmi {
+        status = "okay";
+};
+
+&hdmiphy {
+        status = "okay";
+};
+
+&hdmi_sound {
+        status = "okay";
+};
+
 &i2c1 {
 	clock-frequency = <400000>;
 	i2c-scl-rising-time-ns = <168>;
@@ -254,3 +266,10 @@
 
 };
 
+&vop {
+        status = "okay";
+};
+
+&vop_mmu {
+        status = "okay";
+};

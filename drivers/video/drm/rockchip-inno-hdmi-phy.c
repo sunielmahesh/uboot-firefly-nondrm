@@ -331,6 +331,7 @@ static u32 inno_hdmi_phy_get_tmdsclk(struct inno_hdmi_phy *inno,
 {
 	u32 tmdsclk;
 
+	printf("inno_hdmi_phy_get_tmdsclk\n");
 	switch (inno->bus_width) {
 	case 4:
 		tmdsclk = (u32)rate / 2;
@@ -367,6 +368,7 @@ static u8 rk_get_cpu_version(void)
 	ofnode node;
 	int ret;
 
+	printf("rk_get_cpu_version\n");
 	ret = uclass_get_device_by_driver(UCLASS_MISC,
 					  DM_GET_DRIVER(rockchip_efuse), &dev);
 	if (ret) {
@@ -404,6 +406,7 @@ static int inno_hdmi_phy_power_on(struct rockchip_phy *phy)
 	u32 tmdsclock = inno_hdmi_phy_get_tmdsclk(inno, inno->pixclock);
 	u32 chipversion = 1;
 
+	printf("inno_hdmi_phy_power_on\n");
 	printf("start Inno HDMI PHY Power On\n");
 
 	if (inno->phy_cfg)
@@ -446,6 +449,7 @@ static int inno_hdmi_phy_power_off(struct rockchip_phy *phy)
 {
 	struct inno_hdmi_phy *inno = dev_get_priv(phy->dev);
 
+	printf("inno_hdmi_phy_power_off\n");
 	if (inno->plat_data->ops->power_off)
 		inno->plat_data->ops->power_off(inno);
 	printf("Inno HDMI PHY Power Off\n");
@@ -457,6 +461,7 @@ static int inno_hdmi_phy_clk_is_prepared(struct inno_hdmi_phy *inno)
 {
 	u8 status;
 
+	printf("inno_hdmi_phy_clk_is_prepared\n");
 	if (inno->plat_data->dev_type == INNO_HDMI_PHY_RK3228)
 		status = inno_read(inno, 0xe0) & PRE_PLL_POWER_MASK;
 	else
@@ -467,6 +472,7 @@ static int inno_hdmi_phy_clk_is_prepared(struct inno_hdmi_phy *inno)
 
 static int inno_hdmi_phy_clk_prepare(struct inno_hdmi_phy *inno)
 {
+	printf("inno_hdmi_phy_clk_prepare\n");
 	if (inno->plat_data->dev_type == INNO_HDMI_PHY_RK3228)
 		inno_update_bits(inno, 0xe0, PRE_PLL_POWER_MASK,
 				 PRE_PLL_POWER_UP);
@@ -482,6 +488,7 @@ static int inno_hdmi_phy_clk_set_rate(struct inno_hdmi_phy *inno,
 	const struct pre_pll_config *cfg = pre_pll_cfg_table;
 	u32 tmdsclock = inno_hdmi_phy_get_tmdsclk(inno, rate);
 
+	printf("inno_hdmi_phy_clk_set_rate\n");
 	for (; cfg->pixclock != ~0UL; cfg++)
 		if (cfg->pixclock == rate && cfg->tmdsclock == tmdsclock)
 			break;
@@ -503,6 +510,7 @@ static void inno_hdmi_phy_rk3228_init(struct inno_hdmi_phy *inno)
 {
 	u32 m, v;
 
+	printf("inno_hdmi_phy_rk3228_init\n");
 	/*
 	 * Use phy internal register control
 	 * rxsense/poweron/pllpd/pdataen signal.
@@ -525,6 +533,7 @@ inno_hdmi_phy_rk3228_power_on(struct inno_hdmi_phy *inno,
 	int pll_tries;
 	u32 m, v;
 
+	printf("inno_hdmi_phy_rk3228_power_on\n");
 	/* pdata_en disable */
 	inno_update_bits(inno, 0x02, PDATAEN_MASK, PDATAEN_DISABLE);
 
@@ -593,6 +602,7 @@ inno_hdmi_phy_rk3228_power_on(struct inno_hdmi_phy *inno,
 
 static void inno_hdmi_phy_rk3228_power_off(struct inno_hdmi_phy *inno)
 {
+	printf("inno_hdmi_phy_rk3228_power_off\n");
 	/* TMDS driver Disable */
 	inno_update_bits(inno, 0xe1, TMDS_DRIVER_MASK, TMDS_DRIVER_DISABLE);
 
@@ -610,6 +620,7 @@ inno_hdmi_phy_rk3228_pre_pll_update(struct inno_hdmi_phy *inno,
 	int pll_tries;
 	u32 m, v;
 
+	printf("inno_hdmi_phy_rk3228_pre_pll_update\n");
 	/* Power down PRE-PLL */
 	inno_update_bits(inno, 0xe0, PRE_PLL_POWER_MASK, PRE_PLL_POWER_DOWN);
 
@@ -657,6 +668,7 @@ inno_hdmi_phy_rk3228_pre_pll_update(struct inno_hdmi_phy *inno,
 
 static void inno_hdmi_phy_rk3328_init(struct inno_hdmi_phy *inno)
 {
+	printf("inno_hdmi_phy_rk3328_init\n");
 	/*
 	 * Use phy internal register control
 	 * rxsense/poweron/pllpd/pdataen signal.
@@ -672,6 +684,7 @@ inno_hdmi_phy_rk3328_power_on(struct inno_hdmi_phy *inno,
 {
 	u32 val;
 
+	printf("inno_hdmi_phy_rk3328_power_on\n");
 	/* set pdata_en to 0 */
 	inno_update_bits(inno, 0x02, 1, 0);
 	/* Power off post PLL */
@@ -757,6 +770,7 @@ inno_hdmi_phy_rk3328_power_on(struct inno_hdmi_phy *inno,
 
 static void inno_hdmi_phy_rk3328_power_off(struct inno_hdmi_phy *inno)
 {
+	printf("inno_hdmi_phy_rk3328_power_off\n");
 	/* Power off driver */
 	inno_write(inno, 0xb2, 0);
 	/* Power off band gap */
@@ -771,6 +785,7 @@ inno_hdmi_phy_rk3328_pre_pll_update(struct inno_hdmi_phy *inno,
 {
 	u32 val;
 
+	printf("inno_hdmi_phy_rk3328_pre_pll_update\n");
 	/* Power off PLL */
 	inno_update_bits(inno, 0xa0, 1, 1);
 	/* Configure pre-pll */
@@ -832,6 +847,7 @@ inno_hdmi_3328_phy_pll_recalc_rate(struct inno_hdmi_phy *inno,
 	__maybe_unused u8 no_c;
 	u16 nf;
 
+	printf("inno_hdmi_3328_phy_pll_recalc_rate\n");
 	nd = inno_read(inno, 0xa1) & 0x3f;
 	nf = ((inno_read(inno, 0xa2) & 0x0f) << 8) | inno_read(inno, 0xa3);
 	vco = parent_rate * nf;
@@ -867,6 +883,7 @@ int inno_hdmi_update_phy_table(struct inno_hdmi_phy *inno, u32 *config,
 {
 	int i, j;
 
+	printf("inno_hdmi_update_phy_table\n");
 	for (i = 0; i < phy_table_size; i++) {
 		phy_cfg[i].tmdsclock =
 			(unsigned long)config[i * 15];
@@ -937,6 +954,7 @@ static int inno_hdmi_phy_init(struct rockchip_phy *phy)
 
 	inno->node = dev->node;
 
+	printf("inno_hdmi_phy_init\n");
 	inno->regs = dev_read_addr_ptr(dev);
 	if (!inno->regs) {
 		printf("%s: failed to get phy address\n", __func__);
@@ -1004,6 +1022,7 @@ static unsigned long inno_hdmi_phy_set_pll(struct rockchip_phy *phy,
 {
 	struct inno_hdmi_phy *inno = dev_get_priv(phy->dev);
 
+	printf("inno_hdmi_phy_set_pll\n");
 	inno_hdmi_phy_clk_prepare(inno);
 	inno_hdmi_phy_clk_is_prepared(inno);
 	inno_hdmi_phy_clk_set_rate(inno, rate);
@@ -1015,6 +1034,7 @@ inno_hdmi_phy_set_bus_width(struct rockchip_phy *phy, u32 bus_width)
 {
 	struct inno_hdmi_phy *inno = dev_get_priv(phy->dev);
 
+	printf("inno_hdmi_phy_set_bus_width\n");
 	inno->bus_width = bus_width;
 
 	return 0;
@@ -1028,6 +1048,7 @@ inno_hdmi_phy_clk_round_rate(struct rockchip_phy *phy, unsigned long rate)
 	const struct pre_pll_config *cfg = pre_pll_cfg_table;
 	u32 tmdsclock = inno_hdmi_phy_get_tmdsclk(inno, rate);
 
+	printf("inno_hdmi_phy_clk_round_rate\n");
 	for (; cfg->pixclock != ~0UL; cfg++)
 		if (cfg->pixclock == rate)
 			break;
@@ -1091,6 +1112,7 @@ static int inno_hdmi_phy_probe(struct udevice *dev)
 	struct rockchip_phy *phy =
 		(struct rockchip_phy *)dev_get_driver_data(dev);
 
+	printf("inno_hdmi_phy_probe\n");
 	inno->dev = dev;
 	phy->dev = dev;
 

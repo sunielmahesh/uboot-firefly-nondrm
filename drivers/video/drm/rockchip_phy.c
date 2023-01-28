@@ -12,6 +12,7 @@ int rockchip_phy_init(struct rockchip_phy *phy)
 	if (!phy)
 		return -ENODEV;
 
+	printf("rockchip_phy_init\n");
 	if (phy->funcs && phy->funcs->init)
 		return phy->funcs->init(phy);
 
@@ -23,6 +24,7 @@ int rockchip_phy_power_on(struct rockchip_phy *phy)
 	if (!phy)
 		return -ENODEV;
 
+	printf("rockchip_phy_power_on\n");
 	if (phy->funcs && phy->funcs->power_on)
 		return phy->funcs->power_on(phy);
 
@@ -34,6 +36,7 @@ int rockchip_phy_power_off(struct rockchip_phy *phy)
 	if (!phy)
 		return -ENODEV;
 
+	printf("rockchip_phy_power_off\n");
 	if (phy->funcs && phy->funcs->power_off)
 		return phy->funcs->power_off(phy);
 
@@ -46,6 +49,7 @@ unsigned long rockchip_phy_set_pll(struct rockchip_phy *phy,
 	if (!phy)
 		return -ENODEV;
 
+	printf("rockchip_phy_set_pll\n");
 	if (phy->funcs && phy->funcs->set_pll)
 		return phy->funcs->set_pll(phy, rate);
 
@@ -56,6 +60,7 @@ int rockchip_phy_set_bus_width(struct rockchip_phy *phy, u32 bus_width)
 {
 	if (!phy)
 		return -ENODEV;
+	printf("rockchip_phy_set_bus_width\n");
 
 	if (phy->funcs && phy->funcs->set_bus_width)
 		return phy->funcs->set_bus_width(phy, bus_width);
@@ -68,6 +73,7 @@ long rockchip_phy_round_rate(struct rockchip_phy *phy, unsigned long rate)
 	if (!phy)
 		return -ENODEV;
 
+	printf("rockchip_phy_round_rate\n");
 	if (phy->funcs && phy->funcs->round_rate)
 		return phy->funcs->round_rate(phy, rate);
 
@@ -78,6 +84,7 @@ int rockchip_phy_set_mode(struct rockchip_phy *phy, enum phy_mode mode)
 {
 	if (!phy)
 		return -ENODEV;
+	printf("rockchip_phy_set_mode\n");
 
 	if (phy->funcs && phy->funcs->set_mode)
 		return phy->funcs->set_mode(phy, mode);

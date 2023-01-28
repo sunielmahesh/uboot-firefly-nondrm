@@ -291,6 +291,7 @@ static void cmdline_handle(void)
 
 int board_late_init(void)
 {
+	printf("in board_late_init\n");
 	rockchip_set_ethaddr();
 	rockchip_set_serialno();
 	setup_download_mode();
@@ -304,7 +305,8 @@ int board_late_init(void)
 	charge_display();
 #endif
 #ifdef CONFIG_DRM_ROCKCHIP
-	rockchip_show_logo();
+//	rockchip_show_logo();
+//	rk3399_show_logo();
 #endif
 	env_fixup();
 	soc_clk_dump();
@@ -408,6 +410,7 @@ int interrupt_debugger_init(void)
 
 int board_fdt_fixup(void *blob)
 {
+	printf("board_fdt_fixup\n");
 	/* Common fixup for DRM */
 #ifdef CONFIG_DRM_ROCKCHIP
 	rockchip_display_fixup(blob);

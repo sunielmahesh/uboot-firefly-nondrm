@@ -809,15 +809,17 @@ static int display_disable(struct display_state *state)
 
 static int display_logo(struct display_state *state)
 {
-	struct crtc_state *crtc_state = &state->crtc_state;
-	struct connector_state *conn_state = &state->conn_state;
-	struct logo_info *logo = &state->logo;
-	int hdisplay, vdisplay, ret;
+//	struct crtc_state *crtc_state = &state->crtc_state;
+//	struct connector_state *conn_state = &state->conn_state;
+//	struct logo_info *logo = &state->logo;
+//	int hdisplay, vdisplay, ret;
+	int ret;
 
 	ret = display_init(state);
 	if (!state->is_init || ret)
 		return -ENODEV;
 
+#if 0
 	switch (logo->bpp) {
 	case 16:
 		crtc_state->format = ROCKCHIP_FMT_RGB565;
@@ -865,7 +867,7 @@ static int display_logo(struct display_state *state)
 			crtc_state->crtc_h = crtc_state->src_h;
 		}
 	}
-
+#endif
 	display_set_plane(state);
 	display_enable(state);
 
@@ -1228,6 +1230,20 @@ int rockchip_show_logo(void)
 	}
 
 	return ret;
+}
+
+int rk3399_show_logo(void)
+{
+	struct display_state *s;
+        int ret = 0;
+
+        list_for_each_entry(s, &rockchip_display_list, head) {
+                s->logo.mode = s->logo_mode;
+                ret = display_logo(s);
+	}
+
+        return ret;
+
 }
 
 enum {

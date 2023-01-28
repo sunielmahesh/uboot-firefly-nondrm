@@ -83,3 +83,11 @@
 	u-boot,dm-pre-reloc;
 	status = "okay";
 };
+
+&vopb {
+        u-boot,dm-pre-reloc;
+};
+
+&vopl {
+        u-boot,dm-pre-reloc;
+};

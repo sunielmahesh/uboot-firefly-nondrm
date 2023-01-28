@@ -108,6 +108,27 @@
 		interrupt-affinity = <&cpu0>, <&cpu1>, <&cpu2>, <&cpu3>;
 	};
 
+	display_subsystem: display-subsystem {
+                compatible = "rockchip,display-subsystem";
+                ports = <&vop_out>;
+        };
+
+        hdmi_sound: hdmi-sound {
+                compatible = "simple-audio-card";
+                simple-audio-card,format = "i2s";
+                simple-audio-card,mclk-fs = <128>;
+                simple-audio-card,name = "HDMI";
+                status = "disabled";
+
+                simple-audio-card,cpu {
+                        sound-dai = <&i2s0>;
+                };
+
+                simple-audio-card,codec {
+                        sound-dai = <&hdmi>;
+                };
+        };
+
 	psci {
 		compatible = "arm,psci-1.0";
 		method = "smc";
@@ -349,6 +370,31 @@
 		};
 	};
 
+	efuse: efuse@ff260000 {
+                compatible = "rockchip,rk3328-efuse";
+                reg = <0x0 0xff260000 0x0 0x50>;
+                #address-cells = <1>;
+                #size-cells = <1>;
+                clocks = <&cru SCLK_EFUSE>;
+                clock-names = "pclk_efuse";
+                rockchip,efuse-size = <0x20>;
+
+                /* Data cells */
+                efuse_id: id@7 {
+                        reg = <0x07 0x10>;
+                };
+                cpu_leakage: cpu-leakage@17 {
+                        reg = <0x17 0x1>;
+                };
+                logic_leakage: logic-leakage@19 {
+                        reg = <0x19 0x1>;
+                };
+                efuse_cpu_version: cpu-version@1a {
+                        reg = <0x1a 0x1>;
+                        bits = <3 3>;
+                };
+        };
+
 	saradc: saradc@ff280000 {
 		compatible = "rockchip,rk3328-saradc", "rockchip,saradc";
 		reg = <0x0 0xff280000 0x0 0x100>;
@@ -370,6 +416,82 @@
 		       0x0 0xff720000 0x0 0x1000
 		       0x0 0xff798000 0x0 0x1000>;
 	};
+
+	vop: vop@ff370000 {
+                compatible = "rockchip,rk3328-vop";
+                reg = <0x0 0xff370000 0x0 0x3efc>;
+                interrupts = <GIC_SPI 32 IRQ_TYPE_LEVEL_HIGH>;
+                clocks = <&cru ACLK_VOP>, <&cru DCLK_LCDC>, <&cru HCLK_VOP>;
+                clock-names = "aclk_vop", "dclk_vop", "hclk_vop";
+                resets = <&cru SRST_VOP_A>, <&cru SRST_VOP_H>, <&cru SRST_VOP_D>;
+                reset-names = "axi", "ahb", "dclk";
+                iommus = <&vop_mmu>;
+                status = "disabled";
+
+                vop_out: port {
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+
+                        vop_out_hdmi: endpoint@0 {
+                                reg = <0>;
+                                remote-endpoint = <&hdmi_in_vop>;
+                        };
+                };
+        };
+
+        vop_mmu: iommu@ff373f00 {
+                compatible = "rockchip,iommu";
+                reg = <0x0 0xff373f00 0x0 0x100>;
+                interrupts = <GIC_SPI 32 IRQ_TYPE_LEVEL_HIGH>;
+                interrupt-names = "vop_mmu";
+                clocks = <&cru ACLK_VOP>, <&cru HCLK_VOP>;
+                clock-names = "aclk", "iface";
+                #iommu-cells = <0>;
+                status = "disabled";
+        };
+
+	hdmi: hdmi@ff3c0000 {
+                compatible = "rockchip,rk3328-dw-hdmi";
+                reg = <0x0 0xff3c0000 0x0 0x20000>;
+                reg-io-width = <4>;
+                interrupts = <GIC_SPI 35 IRQ_TYPE_LEVEL_HIGH>,
+                             <GIC_SPI 71 IRQ_TYPE_LEVEL_HIGH>;
+                clocks = <&cru PCLK_HDMI>,
+                         <&cru SCLK_HDMI_SFC>,
+                         <&cru SCLK_RTC32K>;
+                clock-names = "iahb",
+                              "isfr",
+                              "cec";
+                phys = <&hdmiphy>;
+                phy-names = "hdmi";
+                pinctrl-names = "default";
+                pinctrl-0 = <&hdmi_cec &hdmii2c_xfer &hdmi_hpd>;
+                rockchip,grf = <&grf>;
+                #sound-dai-cells = <0>;
+                status = "disabled";
+
+                ports {
+                        hdmi_in: port {
+                                hdmi_in_vop: endpoint {
+                                        remote-endpoint = <&vop_out_hdmi>;
+                                };
+                        };
+                };
+        };
+
+	hdmiphy: phy@ff430000 {
+                compatible = "rockchip,rk3328-hdmi-phy";
+                reg = <0x0 0xff430000 0x0 0x10000>;
+                interrupts = <GIC_SPI 83 IRQ_TYPE_LEVEL_HIGH>;
+                clocks = <&cru PCLK_HDMIPHY>, <&xin24m>, <&cru DCLK_HDMIPHY>;
+                clock-names = "sysclk", "refoclk", "refpclk";
+                clock-output-names = "hdmi_phy";
+                #clock-cells = <0>;
+                nvmem-cells = <&efuse_cpu_version>;
+                nvmem-cell-names = "cpu-version";
+                #phy-cells = <0>;
+                status = "disabled";
+        };
 
 	cru: clock-controller@ff440000 {
 		compatible = "rockchip,rk3328-cru", "rockchip,cru", "syscon";

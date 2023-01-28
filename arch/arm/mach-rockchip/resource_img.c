@@ -854,23 +854,31 @@ int rockchip_read_resource_dtb(void *fdt_addr, char **hash, int *hash_size)
 	struct resource_file *file;
 	int ret;
 
+	printf("in rockchip_read_resource_dtb\n");
 #ifdef CONFIG_ROCKCHIP_HWID_DTB
 	file = rockchip_read_hwid_dtb();
 	/* If dtbs matched hardware id(GPIO/ADC) not found, try the default */
 	if (!file)
 		file = get_file_info(DTB_FILE);
 #else
+	printf("rockchip_read_resource_dtb: DTB_FILE\n");
 	file = get_file_info(DTB_FILE);
 #endif
-	if (!file)
+	if (!file) {
+		printf("rockchip_read_resource_dtb: no FILE\n");
 		return -ENODEV;
+	}
 
 	ret = rockchip_read_resource_file(fdt_addr, file->name, 0, 0);
-	if (ret < 0)
+	if (ret < 0) {
+		printf("rockchip_read_resource_dtb: rockchip_read_resource_file fail\n");
 		return ret;
+	}
 
-	if (fdt_check_header(fdt_addr))
+	if (fdt_check_header(fdt_addr)) {
+		printf("rockchip_read_resource_dtb: fdt_check_header fail\n");
 		return -EBADF;
+	}
 
 	*hash = file->hash;
 	*hash_size = file->hash_size;

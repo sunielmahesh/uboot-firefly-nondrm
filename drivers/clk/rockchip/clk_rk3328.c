@@ -121,6 +121,7 @@ static ulong rk3328_armclk_set_clk(struct rk3328_clk_priv *priv, ulong hz)
 	const struct rockchip_cpu_rate_table *rate;
 	ulong old_rate;
 
+	printf("in rk3328_armclk_set_clk\n");
 	rate = rockchip_get_cpu_settings(rk3328_cpu_rates, hz);
 	if (!rate) {
 		printf("%s unsupported rate\n", __func__);
@@ -169,6 +170,7 @@ static ulong rk3328_i2c_get_clk(struct rk3328_clk_priv *priv, ulong clk_id)
 	struct rk3328_cru *cru = priv->cru;
 	u32 div, con;
 
+	printf("in rk3328_i2c_get_clk\n");
 	switch (clk_id) {
 	case SCLK_I2C0:
 		con = readl(&cru->clksel_con[34]);
@@ -200,6 +202,7 @@ static ulong rk3328_i2c_set_clk(struct rk3328_clk_priv *priv,
 	struct rk3328_cru *cru = priv->cru;
 	int src_clk_div;
 
+	printf("in rk3328_i2c_set_clk \n");
 	src_clk_div = priv->gpll_hz / hz;
 	assert(src_clk_div - 1 < 127);
 
@@ -285,6 +288,7 @@ static ulong rk3328_mmc_get_clk(struct rk3328_clk_priv *priv, uint clk_id)
 	struct rk3328_cru *cru = priv->cru;
 	u32 div, con, con_id;
 
+	printf("in rk3328_mmc_get_clk\n");
 	switch (clk_id) {
 	case HCLK_SDMMC:
 	case SCLK_SDMMC:
@@ -315,6 +319,7 @@ static ulong rk3328_mmc_set_clk(struct rk3328_clk_priv *priv,
 	int src_clk_div;
 	u32 con_id;
 
+	printf("in rk3328_mmc_set_clk\n");
 	switch (clk_id) {
 	case HCLK_SDMMC:
 	case SCLK_SDMMC:
@@ -353,6 +358,7 @@ static ulong rk3328_spi_get_clk(struct rk3328_clk_priv *priv)
 	struct rk3328_cru *cru = priv->cru;
 	u32 div, con, mux, p_rate;
 
+	printf("in rk3328_spi_get_clk\n");
 	con = readl(&cru->clksel_con[24]);
 	div = (con & CLK_SPI_DIV_CON_MASK) >> CLK_SPI_DIV_CON_SHIFT;
 	mux = (con & CLK_SPI_PLL_SEL_MASK) >> CLK_SPI_PLL_SEL_SHIFT;
@@ -369,6 +375,7 @@ static ulong rk3328_spi_set_clk(struct rk3328_clk_priv *priv, uint hz)
 	struct rk3328_cru *cru = priv->cru;
 	u32 div = priv->gpll_hz / hz;
 
+	printf("in rk3328_spi_set_clk\n");
 	rk_clrsetreg(&cru->clksel_con[24],
 		     CLK_SPI_PLL_SEL_MASK | CLK_SPI_DIV_CON_MASK,
 		     CLK_SPI_PLL_SEL_GPLL << CLK_SPI_PLL_SEL_SHIFT |
@@ -383,6 +390,7 @@ static ulong rk3328_pwm_get_clk(struct rk3328_clk_priv *priv)
 	struct rk3328_cru *cru = priv->cru;
 	u32 div, con;
 
+	printf("rk3328_pwm_get_clk\n");
 	con = readl(&cru->clksel_con[24]);
 	div = (con & CLK_PWM_DIV_CON_MASK) >> CLK_PWM_DIV_CON_SHIFT;
 
@@ -394,6 +402,7 @@ static ulong rk3328_pwm_set_clk(struct rk3328_clk_priv *priv, uint hz)
 	struct rk3328_cru *cru = priv->cru;
 	u32 div = priv->gpll_hz / hz;
 
+	printf("in rk3328_pwm_set_clk\n");
 	rk_clrsetreg(&cru->clksel_con[24],
 		     CLK_PWM_PLL_SEL_MASK | CLK_PWM_DIV_CON_MASK,
 		     CLK_PWM_PLL_SEL_GPLL << CLK_PWM_PLL_SEL_SHIFT |
@@ -434,6 +443,7 @@ static ulong rk3328_tsadc_get_clk(struct rk3328_clk_priv *priv)
 	struct rk3328_cru *cru = priv->cru;
 	u32 div, val;
 
+	printf("in rk3328_tsadc_get_clk\n");
 	val = readl(&cru->clksel_con[22]);
 	div = bitfield_extract(val, CLK_SARADC_DIV_CON_SHIFT,
 			       CLK_SARADC_DIV_CON_WIDTH);
@@ -446,6 +456,7 @@ static ulong rk3328_tsadc_set_clk(struct rk3328_clk_priv *priv, uint hz)
 	struct rk3328_cru *cru = priv->cru;
 	int src_clk_div;
 
+	printf("in rk3328_tsadc_set_clk\n");
 	src_clk_div = DIV_ROUND_UP(OSC_HZ, hz) - 1;
 	assert(src_clk_div < 128);
 
@@ -461,6 +472,7 @@ static ulong rk3328_vop_get_clk(struct rk3328_clk_priv *priv, ulong clk_id)
 	struct rk3328_cru *cru = priv->cru;
 	u32 div, con, parent;
 
+	printf("in rk3328_vop_get_clk\n");
 	switch (clk_id) {
 	case ACLK_VOP_PRE:
 	case ACLK_VOP:
@@ -494,6 +506,7 @@ static ulong rk3328_vop_set_clk(struct rk3328_clk_priv *priv,
 	int src_clk_div;
 	u32 con, parent;
 
+	printf("in rk3328_vop_set_clk\n");
 	src_clk_div = DIV_ROUND_UP(priv->cpll_hz, hz);
 	assert(src_clk_div - 1 < 31);
 
@@ -553,6 +566,7 @@ static ulong rk3328_bus_get_clk(struct rk3328_clk_priv *priv, ulong clk_id)
 	struct rk3328_cru *cru = priv->cru;
 	u32 div, con, parent;
 
+	printf("in rk3328_bus_get_clk\n");
 	switch (clk_id) {
 	case ACLK_BUS_PRE:
 		con = readl(&cru->clksel_con[0]);
@@ -582,6 +596,7 @@ static ulong rk3328_bus_set_clk(struct rk3328_clk_priv *priv,
 	struct rk3328_cru *cru = priv->cru;
 	int src_clk_div;
 
+	printf("in rk3328_bus_set_clk\n");
 	/*
 	 * select gpll as pd_bus bus clock source and
 	 * set up dependent divisors for PCLK/HCLK and ACLK clocks.
@@ -625,6 +640,7 @@ static ulong rk3328_peri_get_clk(struct rk3328_clk_priv *priv, ulong clk_id)
 	struct rk3328_cru *cru = priv->cru;
 	u32 div, con, parent;
 
+	printf("in rk3328_peri_get_clk\n");
 	switch (clk_id) {
 	case ACLK_PERI_PRE:
 		con = readl(&cru->clksel_con[28]);
@@ -654,6 +670,7 @@ static ulong rk3328_peri_set_clk(struct rk3328_clk_priv *priv,
 	struct rk3328_cru *cru = priv->cru;
 	int src_clk_div;
 
+	printf("in rk3328_peri_set_clk\n");
 	/*
 	 * select gpll as pd_bus bus clock source and
 	 * set up dependent divisors for PCLK/HCLK and ACLK clocks.
@@ -699,6 +716,7 @@ static ulong rk3328_crypto_get_clk(struct rk3328_clk_priv *priv, ulong clk_id)
 	struct rk3328_cru *cru = priv->cru;
 	u32 div, con, parent;
 
+	printf("in rk3328_crypto_get_clk\n");
 	switch (clk_id) {
 	case SCLK_CRYPTO:
 		con = readl(&cru->clksel_con[20]);
@@ -718,6 +736,7 @@ static ulong rk3328_crypto_set_clk(struct rk3328_clk_priv *priv, ulong clk_id,
 	struct rk3328_cru *cru = priv->cru;
 	int src_clk_div;
 
+	printf("in rk3328_crypto_set_clk\n");
 	src_clk_div = DIV_ROUND_UP(priv->gpll_hz, hz);
 	assert(src_clk_div - 1 <= 127);
 
@@ -746,6 +765,7 @@ static ulong rk3328_clk_get_rate(struct clk *clk)
 	struct rk3328_clk_priv *priv = dev_get_priv(clk->dev);
 	ulong rate = 0;
 
+	printf("in rk3328_clk_get_rate\n");
 #ifndef CONFIG_SPL_BUILD
 	if (!priv->gpll_hz) {
 		priv->gpll_hz = rockchip_pll_get_rate(&rk3328_pll_clks[GPLL],
@@ -832,6 +852,7 @@ static ulong rk3328_clk_set_rate(struct clk *clk, ulong rate)
 	struct rk3328_clk_priv *priv = dev_get_priv(clk->dev);
 	ulong ret = 0;
 
+	printf("in rk3328_clk_set_rate\n");
 	switch (clk->id) {
 	case PLL_APLL:
 	case PLL_DPLL:
@@ -1014,6 +1035,7 @@ static int rk3328_lcdc_set_parent(struct clk *clk, struct clk *parent)
 {
 	struct rk3328_clk_priv *priv = dev_get_priv(clk->dev);
 
+	printf("in rk3328_lcdc_set_parent\n");
 	if (parent->id == HDMIPHY)
 		rk_clrsetreg(&priv->cru->clksel_con[40],
 			     DCLK_LCDC_SEL_MASK,
@@ -1037,6 +1059,7 @@ static int rk3328_lcdc_set_parent(struct clk *clk, struct clk *parent)
 
 static int rk3328_clk_set_parent(struct clk *clk, struct clk *parent)
 {
+	printf("rk3328_clk_set_parent\n");
 	switch (clk->id) {
 #ifndef CONFIG_SPL_BUILD
 	case SCLK_MAC2IO:
@@ -1054,7 +1077,7 @@ static int rk3328_clk_set_parent(struct clk *clk, struct clk *parent)
 		return 0;
 	}
 
-	debug("%s: unsupported clk %ld\n", __func__, clk->id);
+	printf("%s: unsupported clk %ld\n", __func__, clk->id);
 	return -ENOENT;
 }
 
@@ -1155,7 +1178,7 @@ static int rk3328_clk_get_phase(struct clk *clk)
 {
 	int ret;
 
-	debug("%s %ld\n", __func__, clk->id);
+	printf("%s %ld\n", __func__, clk->id);
 	switch (clk->id) {
 	case SCLK_EMMC_SAMPLE:
 	case SCLK_SDMMC_SAMPLE:
@@ -1173,7 +1196,7 @@ static int rk3328_clk_set_phase(struct clk *clk, int degrees)
 {
 	int ret;
 
-	debug("%s %ld\n", __func__, clk->id);
+	printf("%s %ld\n", __func__, clk->id);
 	switch (clk->id) {
 	case SCLK_EMMC_SAMPLE:
 	case SCLK_SDMMC_SAMPLE:
@@ -1197,6 +1220,7 @@ static struct clk_ops rk3328_clk_ops = {
 
 static void rkclk_init(struct rk3328_clk_priv *priv)
 {
+	printf("in rkclk_init\n");
 	if (rockchip_pll_get_rate(&rk3328_pll_clks[NPLL],
 				  priv->cru, NPLL) != APLL_HZ)
 		rk3328_armclk_set_clk(priv, APLL_HZ);
@@ -1241,6 +1265,7 @@ static int rk3328_clk_probe(struct udevice *dev)
 	struct rk3328_clk_priv *priv = dev_get_priv(dev);
 	int ret = 0;
 
+	printf("in rk3328_clk_probe\n");
 	priv->sync_kernel = false;
 	if (!priv->armclk_enter_hz)
 		priv->armclk_enter_hz =
@@ -1265,6 +1290,7 @@ static int rk3328_clk_ofdata_to_platdata(struct udevice *dev)
 {
 	struct rk3328_clk_priv *priv = dev_get_priv(dev);
 
+	printf("in rk3328_clk_ofdata_to_platdata\n");
 	priv->cru = dev_read_addr_ptr(dev);
 
 	return 0;
@@ -1277,6 +1303,7 @@ static int rk3328_clk_bind(struct udevice *dev)
 	struct sysreset_reg *priv;
 	struct softreset_reg *sf_priv;
 
+	printf("in rk3328_clk_bind\n");
 	/* The reset driver does not have a device node, so bind it here */
 	ret = device_bind_driver(dev, "rockchip_sysreset", "sysreset",
 				 &sys_child);

@@ -420,6 +420,7 @@ int vendor_storage_init(void)
 		return -ENODEV;
 	}
 
+	printf("vendor_storage_init: dev_desc->if_type: %u\n", dev_desc->if_type);
 	switch (dev_desc->if_type) {
 	case IF_TYPE_MMC:
 		size = EMMC_VENDOR_INFO_SIZE;
@@ -458,7 +459,7 @@ int vendor_storage_init(void)
 		break;
 #endif
 	default:
-		debug("[Vendor ERROR]:Boot device type is invalid!\n");
+		printf("[Vendor ERROR]:Boot device type is invalid!\n");
 		ret = -ENODEV;
 		break;
 	}
@@ -506,7 +507,7 @@ int vendor_storage_init(void)
 	}
 
 	if (max_ver) {
-		debug("[Vendor INFO]:max_ver=%d, vendor_id=%d.\n", max_ver, max_index);
+		printf("[Vendor INFO]:max_ver=%d, vendor_id=%d.\n", max_ver, max_index);
 		/*
 		 * Keep vendor_info the same as the largest
 		 * version of vendor
@@ -520,7 +521,7 @@ int vendor_storage_init(void)
 			}
 		}
 	} else {
-		debug("[Vendor INFO]:Reset vendor info...\n");
+		printf("[Vendor INFO]:Reset vendor info...\n");
 		memset((u8 *)vendor_info.hdr, 0, size);
 		vendor_info.hdr->version = 1;
 		vendor_info.hdr->tag = VENDOR_TAG;
@@ -530,7 +531,7 @@ int vendor_storage_init(void)
 			- (u32)(size_t)vendor_info.data);
 		*(vendor_info.version2) = vendor_info.hdr->version;
 	}
-	debug("[Vendor INFO]:ret=%d.\n", ret);
+	printf("[Vendor INFO]:ret=%d.\n", ret);
 
 out:
 	return ret;
@@ -556,15 +557,20 @@ int vendor_storage_read(u16 id, void *pbuf, u16 size)
 
 	/* init vendor storage */
 	if (!bootdev_type) {
+		printf("vendor_storage_read:bootdev_type\n");
 		ret = vendor_storage_init();
-		if (ret < 0)
+		if (ret < 0) {
+			printf("vendor_storage_read: returning\n");
 			return ret;
+		}
 	}
+
+	printf("vendor_storage_read\n");
 
 	item = vendor_info.item;
 	for (i = 0; i < vendor_info.hdr->item_num; i++) {
 		if ((item + i)->id == id) {
-			debug("[Vendor INFO]:Find the matching item, id=%d\n", id);
+			printf("[Vendor INFO]:Find the matching item, id=%d\n", id);
 			/* Correct the size value */
 			if (size > (item + i)->size)
 				size = (item + i)->size;
@@ -573,7 +579,7 @@ int vendor_storage_read(u16 id, void *pbuf, u16 size)
 			return size;
 		}
 	}
-	debug("[Vendor ERROR]:No matching item, id=%d\n", id);
+	printf("[Vendor ERROR]:No matching item, id=%d\n", id);
 
 	return -EINVAL;
 }

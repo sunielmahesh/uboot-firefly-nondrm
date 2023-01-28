@@ -373,6 +373,7 @@ static int reserve_video(void)
 	ulong addr;
 	int ret;
 
+	printf("%s:\n",__func__);
 	addr = gd->relocaddr;
 	ret = video_reserve(&addr);
 	if (ret)

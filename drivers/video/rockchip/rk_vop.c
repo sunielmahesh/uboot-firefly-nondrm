@@ -11,6 +11,7 @@
 #include <dm.h>
 #include <edid.h>
 #include <regmap.h>
+#include <reset.h>
 #include <syscon.h>
 #include <video.h>
 #include <asm/gpio.h>
@@ -130,7 +131,7 @@ static void rkvop_enable_output(struct udevice *dev, enum vop_modes mode)
 		break;
 
 	default:
-		debug("%s: unsupported output mode %x\n", __func__, mode);
+		printf("%s: unsupported output mode %x\n", __func__, mode);
 	}
 }
 
@@ -143,6 +144,7 @@ static void rkvop_mode_set(struct udevice *dev,
 	struct rkvop_driverdata *data =
 		(struct rkvop_driverdata *)dev_get_driver_data(dev);
 
+	printf("in rkvop_mode_set\n");
 	u32 hactive = edid->hactive.typ;
 	u32 vactive = edid->vactive.typ;
 	u32 hsync_len = edid->hsync_len.typ;
@@ -164,38 +166,38 @@ static void rkvop_mode_set(struct udevice *dev,
 	rkvop_enable_output(dev, mode);
 
 	mode_flags = 0;  /* RGB888 */
-	if ((data->features & VOP_FEATURE_OUTPUT_10BIT) &&
-	    (mode == VOP_MODE_HDMI || mode == VOP_MODE_EDP))
-		mode_flags = 15;  /* RGBaaa */
+        if ((data->features & VOP_FEATURE_OUTPUT_10BIT) &&
+            (mode == VOP_MODE_HDMI || mode == VOP_MODE_EDP))
+                mode_flags = 15;  /* RGBaaa */
 
-	clrsetbits_le32(&regs->dsp_ctrl0, M_DSP_OUT_MODE,
-			V_DSP_OUT_MODE(mode_flags));
+        clrsetbits_le32(&regs->dsp_ctrl0, M_DSP_OUT_MODE,
+                        V_DSP_OUT_MODE(mode_flags));
 
-	writel(V_HSYNC(hsync_len) |
-	       V_HORPRD(hsync_len + hback_porch + hactive + hfront_porch),
-			&regs->dsp_htotal_hs_end);
+        writel(V_HSYNC(hsync_len) |
+               V_HORPRD(hsync_len + hback_porch + hactive + hfront_porch),
+                        &regs->dsp_htotal_hs_end);
 
-	writel(V_HEAP(hsync_len + hback_porch + hactive) |
-	       V_HASP(hsync_len + hback_porch),
-	       &regs->dsp_hact_st_end);
+        writel(V_HEAP(hsync_len + hback_porch + hactive) |
+               V_HASP(hsync_len + hback_porch),
+               &regs->dsp_hact_st_end);
 
-	writel(V_VSYNC(vsync_len) |
-	       V_VERPRD(vsync_len + vback_porch + vactive + vfront_porch),
-	       &regs->dsp_vtotal_vs_end);
+        writel(V_VSYNC(vsync_len) |
+               V_VERPRD(vsync_len + vback_porch + vactive + vfront_porch),
+               &regs->dsp_vtotal_vs_end);
 
-	writel(V_VAEP(vsync_len + vback_porch + vactive)|
-	       V_VASP(vsync_len + vback_porch),
-	       &regs->dsp_vact_st_end);
+        writel(V_VAEP(vsync_len + vback_porch + vactive)|
+               V_VASP(vsync_len + vback_porch),
+               &regs->dsp_vact_st_end);
 
-	writel(V_HEAP(hsync_len + hback_porch + hactive) |
-	       V_HASP(hsync_len + hback_porch),
-	       &regs->post_dsp_hact_info);
+        writel(V_HEAP(hsync_len + hback_porch + hactive) |
+               V_HASP(hsync_len + hback_porch),
+               &regs->post_dsp_hact_info);
 
-	writel(V_VAEP(vsync_len + vback_porch + vactive)|
-	       V_VASP(vsync_len + vback_porch),
-	       &regs->post_dsp_vact_info);
+        writel(V_VAEP(vsync_len + vback_porch + vactive)|
+               V_VASP(vsync_len + vback_porch),
+               &regs->post_dsp_vact_info);
 
-	writel(0x01, &regs->reg_cfg_done); /* enable reg config */
+        writel(0x01, &regs->reg_cfg_done); /* enable reg config */
 }
 
 /**
@@ -204,7 +206,8 @@ static void rkvop_mode_set(struct udevice *dev,
  * This function performs many steps:
  * - Finds the display device being referenced by @ep_node
  * - Puts the VOP's ID into its uclass platform data
- * - Probes the device to set it up
+ *
+- Probes the device to set it up
  * - Reads the EDID timing information
  * - Sets up the VOP clocks, etc. for the selected pixel clock and display mode
  * - Enables the display (the display device handles this and will do different
@@ -218,44 +221,183 @@ static void rkvop_mode_set(struct udevice *dev,
  *		node within the VOP's 'port' list.
  * @return 0 if OK, -ve if something went wrong
  */
-static int rk_display_init(struct udevice *dev, ulong fbbase, int ep_node)
+static int rk_display_init(struct udevice *dev, ulong fbbase, ofnode ep_node)
 {
 	struct video_priv *uc_priv = dev_get_uclass_priv(dev);
-	const void *blob = gd->fdt_blob;
+//	const void *blob = gd->fdt_blob;
 	struct rk_vop_priv *priv = dev_get_priv(dev);
 	int vop_id, remote_vop_id;
 	struct rk3288_vop *regs = priv->regs;
 	struct display_timing timing;
 	struct udevice *disp;
-	int ret, remote, i, offset;
+	int ret;
 	struct display_plat *disp_uc_plat;
 	struct clk clk;
 	enum video_log2_bpp l2bpp;
+	u32 remote_phandle;
+	ofnode remote;
+	const char *compat;
+	struct reset_ctl dclk_rst;
 
+	printf("%s(%s, 0x%lx, %s)\n", __func__,
+              dev_read_name(dev), fbbase, ofnode_get_name(ep_node));
+
+	ret = ofnode_read_u32(ep_node, "remote-endpoint", &remote_phandle);
+        if (ret)
+                return ret;
+
+        remote = ofnode_get_by_phandle(remote_phandle);
+        if (!ofnode_valid(remote))
+                return -EINVAL;
+        remote_vop_id = ofnode_read_u32_default(remote, "reg", -1);
+        printf("remote vop_id=%d\n", remote_vop_id);
+
+	while (ofnode_valid(remote)) {
+                remote = ofnode_get_parent(remote);
+                if (!ofnode_valid(remote)) {
+                        printf("%s(%s): no UCLASS_DISPLAY for remote-endpoint\n",
+                              __func__, dev_read_name(dev));
+                        return -EINVAL;
+                }
+
+                uclass_find_device_by_ofnode(UCLASS_DISPLAY, remote, &disp);
+                if (disp)
+                        break;
+        };
+
+	compat = ofnode_get_property(remote, "compatible", NULL);
+        if (!compat) {
+                printf("%s(%s): Failed to find compatible property\n",
+                      __func__, dev_read_name(dev));
+                return -EINVAL;
+        }
+        if (strstr(compat, "edp")) {
+                vop_id = VOP_MODE_EDP;
+        } else if (strstr(compat, "mipi")) {
+                vop_id = VOP_MODE_MIPI;
+        } else if (strstr(compat, "hdmi")) {
+		printf("rk_display_init: in hdmi\n");
+                vop_id = VOP_MODE_HDMI;
+        } else if (strstr(compat, "cdn-dp")) {
+                vop_id = VOP_MODE_DP;
+        } else if (strstr(compat, "lvds")) {
+                vop_id = VOP_MODE_LVDS;
+        } else {
+                printf("%s(%s): Failed to find vop mode for %s\n",
+                      __func__, dev_read_name(dev), compat);
+                return -EINVAL;
+        }
+        printf("vop_id=%d: before dev_get_uclass_platdata(disp)\n", vop_id);
+
+	disp_uc_plat = dev_get_uclass_platdata(disp);
+        printf("Found device '%s', disp_uc_priv=%p\n", disp->name, disp_uc_plat);
+        if (display_in_use(disp)) {
+                printf("   - device in use\n");
+                return -EBUSY;
+        }
+
+	disp_uc_plat->source_id = remote_vop_id;
+        disp_uc_plat->src_dev = dev;
+
+        ret = device_probe(disp);
+        if (ret) {
+                printf("%s: device '%s' display won't probe (ret=%d)\n",
+                      __func__, dev->name, ret);
+                return ret;
+        }
+	printf("%s: device '%s' display probe (ret=%d)\n",
+                      __func__, dev->name, ret);
+        
+        ret = display_read_timing(disp, &timing);
+        if (ret) {
+                printf("%s: Failed to read timings: %d\n", __func__, ret);
+                return ret;
+        }
+
+	ret = clk_get_by_index(dev, 1, &clk);
+        if (!ret)
+                ret = clk_set_rate(&clk, timing.pixelclock.typ);
+
+	printf("%s: timing.pixelclock.min: %u\n", __func__, timing.pixelclock.min);
+        printf("%s: timing.pixelclock.typ: %u\n", __func__, timing.pixelclock.typ);
+        printf("%s: timing.pixelclock.max: %u\n", __func__, timing.pixelclock.max);
+
+        if (IS_ERR_VALUE(ret)) {
+                printf("%s: Failed to set pixel clock: ret=%d\n", __func__, ret);
+                return ret;
+        }
+
+	printf("%s: vop_id: %u\n", __func__, vop_id);
+	/* Set bitwidth for vop display according to vop mode */
+        switch (vop_id) {
+        case VOP_MODE_EDP:
+#if defined(CONFIG_ROCKCHIP_RK3288)
+        case VOP_MODE_LVDS:
+#endif
+                l2bpp = VIDEO_BPP16;
+                break;
+        case VOP_MODE_HDMI:
+        case VOP_MODE_MIPI:
+                l2bpp = VIDEO_BPP32;
+                break;
+        default:
+                l2bpp = VIDEO_BPP16;
+        }
+
+        rkvop_mode_set(dev, &timing, vop_id);
+
+	ret = reset_get_by_name(dev, "dclk", &dclk_rst);
+        if (ret) {
+                dev_err(dev, "failed to get dclk reset (ret=%d)\n", ret);
+                return ret;
+        }
+
+        rkvop_enable(regs, fbbase, 1 << l2bpp, &timing);
+
+        ret = display_enable(disp, 1 << l2bpp, &timing);
+        if (ret)
+                return ret;
+
+        uc_priv->xsize = timing.hactive.typ;
+        uc_priv->ysize = timing.vactive.typ;
+        uc_priv->bpix = l2bpp;
+        printf("fb=%lx, size=%d %d\n", fbbase, uc_priv->xsize, uc_priv->ysize);
+
+
+
+
+
+
+
+
+
+
+
+#if 0
 	vop_id = fdtdec_get_int(blob, ep_node, "reg", -1);
-	debug("vop_id=%d\n", vop_id);
+	printf("vop_id=%d\n", vop_id);
 	remote = fdtdec_lookup_phandle(blob, ep_node, "remote-endpoint");
 	if (remote < 0)
 		return -EINVAL;
 	remote_vop_id = fdtdec_get_int(blob, remote, "reg", -1);
-	debug("remote vop_id=%d\n", remote_vop_id);
+	printf("remote vop_id=%d\n", remote_vop_id);
 
 	for (i = 0, offset = remote; i < 3 && offset > 0; i++)
 		offset = fdt_parent_offset(blob, offset);
 	if (offset < 0) {
-		debug("%s: Invalid remote-endpoint position\n", dev->name);
+		printf("%s: Invalid remote-endpoint position\n", dev->name);
 		return -EINVAL;
 	}
 
 	ret = uclass_find_device_by_of_offset(UCLASS_DISPLAY, offset, &disp);
 	if (ret) {
-		debug("%s: device '%s' display not found (ret=%d)\n", __func__,
+		printf("%s: device '%s' display not found (ret=%d)\n", __func__,
 		      dev->name, ret);
 		return ret;
 	}
 
 	disp_uc_plat = dev_get_uclass_platdata(disp);
-	debug("Found device '%s', disp_uc_priv=%p\n", disp->name, disp_uc_plat);
+	printf("Found device '%s', disp_uc_priv=%p\n", disp->name, disp_uc_plat);
 	if (display_in_use(disp)) {
 		debug("   - device in use\n");
 		return -EBUSY;
@@ -266,14 +408,14 @@ static int rk_display_init(struct udevice *dev, ulong fbbase, int ep_node)
 
 	ret = device_probe(disp);
 	if (ret) {
-		debug("%s: device '%s' display won't probe (ret=%d)\n",
+		printf("%s: device '%s' display won't probe (ret=%d)\n",
 		      __func__, dev->name, ret);
 		return ret;
 	}
 
 	ret = display_read_timing(disp, &timing);
 	if (ret) {
-		debug("%s: Failed to read timings\n", __func__);
+		printf("%s: Failed to read timings\n", __func__);
 		return ret;
 	}
 
@@ -281,7 +423,7 @@ static int rk_display_init(struct udevice *dev, ulong fbbase, int ep_node)
 	if (!ret)
 		ret = clk_set_rate(&clk, timing.pixelclock.typ);
 	if (IS_ERR_VALUE(ret)) {
-		debug("%s: Failed to set pixel clock: ret=%d\n", __func__, ret);
+		printf("%s: Failed to set pixel clock: ret=%d\n", __func__, ret);
 		return ret;
 	}
 
@@ -309,8 +451,8 @@ static int rk_display_init(struct udevice *dev, ulong fbbase, int ep_node)
 	uc_priv->xsize = timing.hactive.typ;
 	uc_priv->ysize = timing.vactive.typ;
 	uc_priv->bpix = l2bpp;
-	debug("fb=%lx, size=%d %d\n", fbbase, uc_priv->xsize, uc_priv->ysize);
-
+	printf("fb=%lx, size=%d %d\n", fbbase, uc_priv->xsize, uc_priv->ysize);
+#endif
 	return 0;
 }
 
@@ -323,7 +465,7 @@ void rk_vop_probe_regulators(struct udevice *dev,
 
 	for (i = 0; i < cnt; ++i) {
 		name = names[i];
-		debug("%s: probing regulator '%s'\n", dev->name, name);
+		printf("%s: probing regulator '%s'\n", dev->name, name);
 
 		ret = regulator_autoset_by_name(name, &reg);
 		if (!ret)
@@ -334,16 +476,39 @@ void rk_vop_probe_regulators(struct udevice *dev,
 int rk_vop_probe(struct udevice *dev)
 {
 	struct video_uc_platdata *plat = dev_get_uclass_platdata(dev);
-	const void *blob = gd->fdt_blob;
+//	const void *blob = gd->fdt_blob;
 	struct rk_vop_priv *priv = dev_get_priv(dev);
 	int ret = 0;
-	int port, node;
+	ofnode port, node;
+	struct reset_ctl ahb_rst;
 
 	/* Before relocation we don't need to do anything */
 	if (!(gd->flags & GD_FLG_RELOC))
 		return 0;
 
-	priv->regs = (struct rk3288_vop *)devfdt_get_addr(dev);
+	printf("%s:\n",__func__);
+
+	ret = reset_get_by_name(dev, "ahb", &ahb_rst);
+        if (ret) {
+                dev_err(dev, "failed to get ahb reset (ret=%d)\n", ret);
+                return ret;
+        }
+
+        ret = reset_assert(&ahb_rst);
+        if (ret) {
+                dev_err(dev, "failed to assert ahb reset (ret=%d)\n", ret);
+        return ret;
+        }
+        udelay(20);
+
+        ret = reset_deassert(&ahb_rst);
+        if (ret) {
+                dev_err(dev, "failed to deassert ahb reset (ret=%d)\n", ret);
+                return ret;
+        }
+
+	priv->regs = (struct rk3288_vop *)dev_read_addr(dev);
+	printf("%s: priv->regs:0x%lx\n",__func__,(long unsigned int)priv->regs);
 
 	/*
 	 * Try all the ports until we find one that works. In practice this
@@ -353,18 +518,44 @@ int rk_vop_probe(struct udevice *dev)
 	 * clock so it is currently not possible to use more than one display
 	 * device simultaneously.
 	 */
+
+	port = dev_read_subnode(dev, "port");
+        if (!ofnode_valid(port)) {
+                printf("%s(%s): 'port' subnode not found\n",
+                      __func__, dev_read_name(dev));
+                return -EINVAL;
+        }
+
+	for (node = ofnode_first_subnode(port);
+             ofnode_valid(node);
+             node = dev_read_next_subnode(node)) {
+                ret = rk_display_init(dev, plat->base, node);
+                if (ret)
+                        printf("Device failed: ret=%d\n", ret);
+                if (!ret)
+                        break;
+        }
+
+//	rk_display_init(dev, 0, 0);
+
+
+#if 0
 	port = fdt_subnode_offset(blob, dev_of_offset(dev), "port");
-	if (port < 0)
+	if (port < 0) {
+		printf("%s: returning EINVAL\n",__func__);
 		return -EINVAL;
+	}
+
 	for (node = fdt_first_subnode(blob, port);
 	     node > 0;
 	     node = fdt_next_subnode(blob, node)) {
 		ret = rk_display_init(dev, plat->base, node);
 		if (ret)
-			debug("Device failed: ret=%d\n", ret);
+			printf("Device failed: ret=%d\n", ret);
 		if (!ret)
 			break;
 	}
+#endif
 	video_set_flush_dcache(dev, 1);
 
 	return ret;
@@ -374,6 +565,7 @@ int rk_vop_bind(struct udevice *dev)
 {
 	struct video_uc_platdata *plat = dev_get_uclass_platdata(dev);
 
+	printf("%s:\n",__func__);
 	plat->size = 4 * (CONFIG_VIDEO_ROCKCHIP_MAX_XRES *
 			  CONFIG_VIDEO_ROCKCHIP_MAX_YRES);
 

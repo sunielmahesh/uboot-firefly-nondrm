@@ -146,11 +146,13 @@ static const struct udevice_id rockchip_vop_ids[] = {
 
 static int rockchip_vop_probe(struct udevice *dev)
 {
+	printf("rockchip_vop_probe\n");
 	return 0;
 }
 
 static int rockchip_vop_bind(struct udevice *dev)
 {
+	printf("rockchip_vop_bind\n");
 	return 0;
 }
 

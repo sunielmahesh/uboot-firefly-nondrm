@@ -32,8 +32,11 @@ int iomux_doenv(const int console, const char *arg)
 	struct stdio_dev **cons_set;
 
 	console_args = strdup(arg);
-	if (console_args == NULL)
+	printf("%s: arg: %s\n",__func__, arg);
+	if (console_args == NULL) {
+		printf("%s: check 1\n",__func__);
 		return 1;
+	}
 	/*
 	 * Check whether a comma separated list of devices was
 	 * entered and count how many devices were entered.
@@ -58,6 +61,7 @@ int iomux_doenv(const int console, const char *arg)
 	}
 	start = (char **)malloc(i * sizeof(char *));
 	if (start == NULL) {
+		printf("%s: check 2\n",__func__);
 		free(console_args);
 		return 1;
 	}
@@ -72,6 +76,7 @@ int iomux_doenv(const int console, const char *arg)
 	}
 	cons_set = (struct stdio_dev **)calloc(i, sizeof(struct stdio_dev *));
 	if (cons_set == NULL) {
+		printf("%s: check 3\n",__func__);
 		free(start);
 		free(console_args);
 		return 1;
@@ -84,7 +89,7 @@ int iomux_doenv(const int console, const char *arg)
 	case stdout:
 	case stderr:
 		io_flag = DEV_FLAGS_OUTPUT;
-		break;
+	break;
 	default:
 		free(start);
 		free(console_args);
@@ -126,6 +131,7 @@ int iomux_doenv(const int console, const char *arg)
 	free(start);
 	/* failed to set any console */
 	if (cs_idx == 0) {
+		printf("%s: check 5\n",__func__);
 		free(cons_set);
 		return 1;
 	} else {
@@ -134,6 +140,7 @@ int iomux_doenv(const int console, const char *arg)
 			(struct stdio_dev **)realloc(console_devices[console],
 			cs_idx * sizeof(struct stdio_dev *));
 		if (console_devices[console] == NULL) {
+			printf("%s: check 6\n",__func__);
 			free(cons_set);
 			return 1;
 		}
@@ -143,6 +150,7 @@ int iomux_doenv(const int console, const char *arg)
 		cd_count[console] = cs_idx;
 	}
 	free(cons_set);
+	printf("%s: done\n",__func__);
 	return 0;
 }
 #endif /* CONSOLE_MUX */

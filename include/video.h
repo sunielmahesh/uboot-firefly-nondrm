@@ -21,6 +21,8 @@ struct video_uc_platdata {
 	uint align;
 	uint size;
 	ulong base;
+	ulong copy_base;
+        bool hide_logo;
 };
 
 enum video_polarity {
@@ -49,6 +51,13 @@ enum video_log2_bpp {
 
 #define VNBITS(bpix)	(1 << (bpix))
 
+enum video_format {
+        VIDEO_UNKNOWN,
+        VIDEO_X8B8G8R8,
+        VIDEO_X8R8G8B8,
+        VIDEO_X2R10G10B10,
+};
+
 /**
  * struct video_priv - Device information used by the video uclass
  *
@@ -74,6 +83,7 @@ struct video_priv {
 	ushort ysize;
 	ushort rot;
 	enum video_log2_bpp bpix;
+	enum video_format format;
 	const char *vidconsole_drv_name;
 	int font_size;
 
@@ -83,11 +93,14 @@ struct video_priv {
 	 */
 	void *fb;
 	int fb_size;
+	void *copy_fb;		
 	int line_length;
 	int colour_fg;
 	int colour_bg;
 	bool flush_dcache;
 	ushort *cmap;
+	u8 fg_col_idx;
+        u8 bg_col_idx;
 };
 
 /* Placeholder - there are no video operations at present */

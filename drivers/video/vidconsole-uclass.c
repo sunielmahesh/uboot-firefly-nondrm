@@ -14,6 +14,12 @@
 #include <video_console.h>
 #include <video_font.h>		/* Get font data, width and height */
 
+struct vid_rgb {
+        u32 r;
+        u32 g;
+        u32 b;
+};
+
 /* By default we scroll by a single line */
 #ifndef CONFIG_CONSOLE_SCROLL_LINES
 #define CONFIG_CONSOLE_SCROLL_LINES 1
@@ -105,6 +111,61 @@ static void vidconsole_newline(struct udevice *dev)
 	priv->last_ch = 0;
 
 	video_sync(dev->parent);
+}
+
+static const struct vid_rgb colors[VID_COLOR_COUNT] = {
+        { 0x00, 0x00, 0x00 },  /* black */
+        { 0xc0, 0x00, 0x00 },  /* red */
+        { 0x00, 0xc0, 0x00 },  /* green */
+        { 0xc0, 0x60, 0x00 },  /* brown */
+        { 0x00, 0x00, 0xc0 },  /* blue */
+        { 0xc0, 0x00, 0xc0 },  /* magenta */
+        { 0x00, 0xc0, 0xc0 },  /* cyan */
+        { 0xc0, 0xc0, 0xc0 },  /* light gray */
+        { 0x80, 0x80, 0x80 },  /* gray */
+        { 0xff, 0x00, 0x00 },  /* bright red */
+        { 0x00, 0xff, 0x00 },  /* bright green */
+        { 0xff, 0xff, 0x00 },  /* yellow */
+        { 0x00, 0x00, 0xff },  /* bright blue */
+        { 0xff, 0x00, 0xff },  /* bright magenta */
+        { 0x00, 0xff, 0xff },  /* bright cyan */
+        { 0xff, 0xff, 0xff },  /* white */
+};
+
+u32 vid_console_color(struct video_priv *priv, unsigned int idx)
+{
+        switch (priv->bpix) {
+        case VIDEO_BPP16:
+                if (CONFIG_IS_ENABLED(VIDEO_BPP16)) {
+                        return ((colors[idx].r >> 3) << 11) |
+                               ((colors[idx].g >> 2) <<  5) |
+                               ((colors[idx].b >> 3) <<  0);
+                }
+                break;
+        case VIDEO_BPP32:
+                if (CONFIG_IS_ENABLED(VIDEO_BPP32)) {
+                        if (priv->format == VIDEO_X2R10G10B10)
+                                return (colors[idx].r << 22) |
+                                       (colors[idx].g << 12) |
+                                       (colors[idx].b <<  2);
+                        else
+                                return (colors[idx].r << 16) |
+                                       (colors[idx].g <<  8) |
+                                       (colors[idx].b <<  0);
+                }
+                break;
+        default:
+                break;
+        }
+
+        /*
+         * For unknown bit arrangements just support
+         * black and white.
+         */
+        if (idx)
+                return 0xffffff; /* white */
+
+        return 0x000000; /* black */
 }
 
 int vidconsole_put_char(struct udevice *dev, char ch)
